@@ -1,0 +1,459 @@
+@using Fretless.Web.Client.Models
+@inject IJSRuntime JS
+
+<div class="spiral-wheel-container">
+    <div class="spiral-toolbar" role="toolbar" aria-label="Spiral wheel controls">
+        <button class="spiral-zoom-btn" @onclick="ZoomIn"  aria-label="Zoom in">+</button>
+        <button class="spiral-zoom-btn" @onclick="ZoomOut" aria-label="Zoom out">−</button>
+        <button class="spiral-zoom-btn" @onclick="ResetZoom" aria-label="Reset view">R</button>
+        <button class="spiral-zoom-btn spiral-mode-btn @(_ratioMode ? "active" : "")"
+                @onclick="ToggleMode"
+                aria-label="@(_ratioMode ? "Switch to notes mode" : "Switch to ratio mode")"
+                aria-pressed="@_ratioMode.ToString().ToLowerInvariant()">
+            @(_ratioMode ? "Ratio" : "Notes")
+        </button>
+        @if (SelectedNote is not null)
+        {
+            <button class="spiral-zoom-btn" @onclick="ClearSelection" aria-label="Clear selection">✕</button>
+        }
+    </div>
+
+    <svg @ref="_svgRef"
+         viewBox="@_viewBox"
+         xmlns="http://www.w3.org/2000/svg"
+         class="spiral-svg @(_isDragging ? "dragging" : "")"
+         @onwheel="OnWheel"
+         @onpointerdown="OnPointerDown"
+         @onpointermove="OnPointerMove"
+         @onpointerup="OnPointerUp"
+         @onpointerleave="OnPointerUp"
+         preserveAspectRatio="xMidYMid meet"
+         role="img"
+         aria-label="Fretless spiral chord wheel">
+
+        <defs>
+            <radialGradient id="spiralBg" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"   stop-color="#1a1a2e" stop-opacity="1" />
+                <stop offset="100%" stop-color="#0d0d1a" stop-opacity="1" />
+            </radialGradient>
+
+            @* Per-connector linear gradients — regenerated whenever selection changes *@
+            @if (_selectedCofIdx >= 0)
+            {
+                var selColor = MusicTheoryService.NoteColor(_selectedCofIdx, 80, 65);
+                var gradSegs = BuildSegments();
+                var gradRoles = MusicTheoryService.GetKeyRelationships(_selectedCofIdx);
+                var gradSel  = gradSegs.FirstOrDefault(s => MusicTheoryService.CircleOfFifths[s.CofIndex] == SelectedNote);
+                if (gradSel is not null)
+                {
+                    foreach (var gSeg in gradSegs)
+                    {
+                        var gRole = gradRoles.GetValueOrDefault(gSeg.CofIndex);
+                        if (gRole is null) continue;
+                        var gNote = MusicTheoryService.CircleOfFifths[gSeg.CofIndex];
+                        if (gNote == SelectedNote) continue;
+                        // gradientUnits="userSpaceOnUse" lets us use actual SVG coordinates
+                        <linearGradient id="conn-grad-@gSeg.CofIndex"
+                                        gradientUnits="userSpaceOnUse"
+                                        x1="@gradSel.MidX.I()" y1="@gradSel.MidY.I()"
+                                        x2="@gSeg.MidX.I()"    y2="@gSeg.MidY.I()">
+                            <stop offset="0%"   stop-color="@selColor"   stop-opacity="1" />
+                            <stop offset="100%" stop-color="@gRole.Color" stop-opacity="1" />
+                        </linearGradient>
+                    }
+                }
+            }
+        </defs>
+
+        @* Background *@
+        <rect x="-500" y="-500" width="1000" height="1000" fill="url(#spiralBg)" />
+
+        @* ── Note segments (beads on the spiral string) ── *@
+        @{
+            var segments   = BuildSegments();
+            var keyRoles   = _selectedCofIdx >= 0
+                             ? MusicTheoryService.GetKeyRelationships(_selectedCofIdx)
+                             : null;
+            var diatonicByNote = _selectedCofIdx >= 0
+                             ? MusicTheoryService.GetDiatonicChords(_selectedCofIdx)
+                                 .GroupBy(d => d.Chord.Root)
+                                 .ToDictionary(g => g.Key, g => g.First())
+                             : null;
+            var isFocusMode = _focusedNote is not null;
+        }
+
+        @* ── Connector lines from selected note to each diatonic note ── *@
+        @if (keyRoles is not null)
+        {
+            var selSeg = segments.FirstOrDefault(s => MusicTheoryService.CircleOfFifths[s.CofIndex] == SelectedNote);
+            if (selSeg is not null)
+            {
+                foreach (var seg in segments)
+                {
+                    var role = keyRoles.GetValueOrDefault(seg.CofIndex);
+                    if (role is null) continue;
+                    var note = MusicTheoryService.CircleOfFifths[seg.CofIndex];
+                    if (note == SelectedNote) continue;
+                    if (isFocusMode && note != _focusedNote) continue;
+                    var lineColor = role.Color;
+
+                    // Perpendicular offset direction (normalised), always pointing away from SVG origin
+                    var dx  = seg.MidX - selSeg.MidX;
+                    var dy  = seg.MidY - selSeg.MidY;
+                    var len = Math.Sqrt(dx * dx + dy * dy);
+                    var px  = len > 0 ? -dy / len : 0.0;
+                    var py  = len > 0 ?  dx / len : 1.0;
+                    // Straight-line midpoint
+                    var smx = (selSeg.MidX + seg.MidX) / 2.0;
+                    var smy = (selSeg.MidY + seg.MidY) / 2.0;
+                    if (px * smx + py * smy < 0) { px = -px; py = -py; }
+
+                    // Quadratic control point: bulge perpendicularly outward from centre
+                    var bulge = len * 0.25;
+                    var qcx   = smx + px * bulge;
+                    var qcy   = smy + py * bulge;
+
+                    // Place labels at 65% along the curved arc (approx via linear interp)
+                    var lmx = selSeg.MidX + (seg.MidX - selSeg.MidX) * 0.65;
+                    var lmy = selSeg.MidY + (seg.MidY - selSeg.MidY) * 0.65;
+
+                    var labelOffset = 5.5 / _zoom;
+                    var fontSize    = $"{5.0 / _zoom}";
+                    var gradId      = $"conn-grad-{seg.CofIndex}";
+
+                    <path d="M @selSeg.MidX.I() @selSeg.MidY.I() Q @qcx.I() @qcy.I() @seg.MidX.I() @seg.MidY.I()"
+                          fill="none"
+                          stroke="url(#@gradId)"
+                          stroke-width="@(2.2 / _zoom)"
+                          stroke-linecap="round"
+                          opacity="0.7" />
+
+                    @* Human descriptor above the line *@
+                    @SvgText(lmx + px * labelOffset, lmy + py * labelOffset,
+                        fontSize,
+                        $"fill:{lineColor};font-family:'Helvetica Neue',sans-serif;font-weight:600;pointer-events:none;opacity:0.9",
+                        role.Label)
+
+                    @* Mode name below the line *@
+                    @SvgText(lmx - px * labelOffset, lmy - py * labelOffset,
+                        fontSize,
+                        $"fill:{lineColor};font-family:'Helvetica Neue',sans-serif;pointer-events:none;opacity:0.7",
+                        role.Mode)
+                }
+            }
+        }
+
+        @foreach (var seg in segments)
+        {
+            var note           = MusicTheoryService.CircleOfFifths[seg.CofIndex];
+            var isSelected     = SelectedNote == note;
+            var role           = keyRoles?.GetValueOrDefault(seg.CofIndex);
+            var isDiatonic     = role is not null;
+            var isInactive     = keyRoles is not null && !isDiatonic && !isSelected;
+            var diatonicEntry  = diatonicByNote?.GetValueOrDefault(note);
+            var isActiveChord  = diatonicEntry is not null && ActiveChord?.DisplayName == diatonicEntry.Chord.DisplayName;
+
+            var baseColor  = MusicTheoryService.NoteColor(seg.CofIndex, 65, 42);
+            var segColor   = isSelected  ? "#ffffff"
+                           : isActiveChord ? MusicTheoryService.MoodColor(diatonicEntry!.Chord.Type.Mood)
+                           : isDiatonic  ? role!.Color
+                           : baseColor;
+            var opacity    = isFocusMode && !isSelected && note != _focusedNote ? "0.04"
+                           : isInactive  ? "0.07"
+                           : (isDiatonic && !isSelected && !isActiveChord) ? "0.6"
+                           : "1";
+            var thickness  = isSelected   ? SegmentThickness * 1.8 / _zoom
+                           : isActiveChord ? SegmentThickness * 1.5 / _zoom
+                           : isDiatonic   ? SegmentThickness * 0.9 / _zoom
+                           : SegmentThickness * 0.45 / _zoom;
+
+            // Diatonic arcs directly trigger chord selection; others select the note
+            var segNote = note;
+            var segEntry = diatonicEntry;
+
+            <g class="note-segment @(isSelected ? "selected" : isActiveChord ? "chord-active" : isDiatonic ? "diatonic" : "")"
+               @onclick="async () => { if (segEntry is not null) await SelectChord(segEntry.Chord); else SelectNote(segNote); }"
+               style="cursor:pointer"
+               opacity="@opacity">
+                <path d="@seg.ArcPath"
+                      fill="none"
+                      stroke="@segColor"
+                      stroke-width="@thickness.I()"
+                      stroke-linecap="round" />
+
+                @* Invisible wider hit area *@
+                <path d="@seg.ArcPath"
+                      fill="none"
+                      stroke="transparent"
+                      stroke-width="@(Math.Max(thickness, 18.0 / _zoom).I())"
+                      stroke-linecap="round" />
+
+                @* Note name on the arc *@
+                @SvgText(seg.MidX, seg.MidY,
+                    $"{(isSelected ? 11.0 : 9.0) / _zoom}",
+                    $"fill:{(isSelected ? "#1a1a2e" : "#ffffff")};font-family:'Helvetica Neue',sans-serif;font-weight:bold;pointer-events:none",
+                    _ratioMode ? seg.RatioLabel : MusicTheoryService.DisplayName(note))
+
+                @* Role + chord name label offset from midpoint *@
+                @if (isDiatonic && !isSelected && (!isFocusMode || note == _focusedNote))
+                {
+                    var lx = seg.MidX + seg.NormalX * 14.0 / _zoom;
+                    var ly = seg.MidY + seg.NormalY * 14.0 / _zoom;
+                    var chordLabel = diatonicEntry is not null
+                        ? $"{role!.Roman} · {diatonicEntry.Chord.DisplayName}"
+                        : role!.Roman + " " + role.Mode;
+                    var labelColor = isActiveChord
+                        ? MusicTheoryService.MoodColor(diatonicEntry!.Chord.Type.Mood)
+                        : role!.Color;
+                    @SvgText(lx, ly,
+                        $"{8.0 / _zoom}",
+                        $"fill:{labelColor};font-family:'Helvetica Neue',sans-serif;font-weight:700;pointer-events:none",
+                        chordLabel)
+                }
+                @if (isSelected && ActiveChord is not null)
+                {
+                    var selfRole = MusicTheoryService.GetKeyRelationships(seg.CofIndex).GetValueOrDefault(seg.CofIndex);
+                    var lx = seg.MidX + seg.NormalX * 14.0 / _zoom;
+                    var ly = seg.MidY + seg.NormalY * 14.0 / _zoom;
+                    @SvgText(lx, ly,
+                        $"{8.0 / _zoom}",
+                        $"fill:#FFD700;font-family:'Helvetica Neue',sans-serif;font-weight:700;pointer-events:none",
+                        "I · " + (selfRole?.Mode ?? "Ionian"))
+                }
+            </g>
+        }
+
+
+    </svg>
+
+    @if (ActiveChord is not null)
+    {
+        <div class="spiral-chord-info" style="border-color:@MusicTheoryService.MoodColor(ActiveChord.Type.Mood)">
+            <span class="spiral-chord-name" style="color:@MusicTheoryService.MoodColor(ActiveChord.Type.Mood)">
+                @ActiveChord.DisplayName
+            </span>
+            <span class="spiral-chord-type">@ActiveChord.Type.Name</span>
+            <span class="spiral-chord-desc">@ActiveChord.Type.Description</span>
+            <span class="spiral-chord-mode" style="color:@MusicTheoryService.MoodColor(ActiveChord.Type.Mood)">
+                @ActiveChord.Type.Mood — @MusicTheoryService.MoodModeLabels[ActiveChord.Type.Mood]
+            </span>
+            <button class="play-btn" @onclick="PlayActiveChord">Play</button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback<NoteChord?> OnChordSelected { get; set; }
+
+    /// <summary>
+    /// Driven by the parent when an external source (e.g. ChordPairings) selects a chord.
+    /// Setting this highlights the chord's root note on the spiral.
+    /// </summary>
+    [Parameter] public NoteChord? HighlightChord { get; set; }
+
+    private NoteChord? _prevHighlightChord;
+
+    private string? SelectedNote { get; set; }
+    private NoteChord? ActiveChord { get; set; }
+    private string? _focusedNote = null;
+    private bool _ratioMode = false;
+
+    private ElementReference _svgRef;
+
+    // ── Zoom / pan ───────────────────────────────────────────────────────────
+    private double _zoom   = 1.0;
+    private double _panX   = 0.0;
+    private double _panY   = 0.0;
+    private const double MinZoom = 0.3;
+    private const double MaxZoom = 5.0;
+
+    private bool   _isDragging = false;
+    private bool   _dragMoved  = false;
+    private double _dragStartX = 0, _dragStartY = 0;
+    private double _panStartX  = 0, _panStartY  = 0;
+
+    private string _viewBox =>
+        $"{_panX - 210 / _zoom} {_panY - 210 / _zoom} {420 / _zoom} {420 / _zoom}";
+
+    private void ZoomIn()    { _zoom = Math.Min(_zoom * 1.25, MaxZoom); }
+    private void ZoomOut()   { _zoom = Math.Max(_zoom / 1.25, MinZoom); }
+    private void ResetZoom() { _zoom = 1.0; _panX = 0; _panY = 0; }
+    private void ToggleMode() { _ratioMode = !_ratioMode; }
+
+    protected override void OnParametersSet()
+    {
+        // Only react when the inbound HighlightChord actually changes.
+        if (HighlightChord == _prevHighlightChord) return;
+        _prevHighlightChord = HighlightChord;
+
+        if (HighlightChord is null)
+        {
+            // Parent cleared the selection — leave the spiral as-is so the user
+            // can still see whatever they had selected.
+            return;
+        }
+
+        // Snap the spiral's selection to the highlighted chord's root note
+        // and set the focused note so connector lines are drawn correctly.
+        SelectedNote = HighlightChord.Root;
+        ActiveChord  = HighlightChord;
+        _focusedNote = HighlightChord.Root;
+    }
+
+    private void OnWheel(WheelEventArgs e)
+    {
+        _zoom = Math.Clamp(_zoom * (e.DeltaY < 0 ? 1.1 : 0.9), MinZoom, MaxZoom);
+    }
+
+    private void OnPointerDown(PointerEventArgs e)
+    {
+        _isDragging = true; _dragMoved = false;
+        _dragStartX = e.ClientX; _dragStartY = e.ClientY;
+        _panStartX  = _panX;     _panStartY  = _panY;
+    }
+
+    private void OnPointerMove(PointerEventArgs e)
+    {
+        if (!_isDragging) return;
+        var dx = e.ClientX - _dragStartX;
+        var dy = e.ClientY - _dragStartY;
+        if (Math.Abs(dx) > 3 || Math.Abs(dy) > 3) _dragMoved = true;
+        var scale = (420.0 / _zoom) / 720.0;
+        _panX = _panStartX - dx * scale;
+        _panY = _panStartY - dy * scale;
+    }
+
+    private void OnPointerUp(PointerEventArgs e) { _isDragging = false; }
+
+    // ── Spiral geometry ──────────────────────────────────────────────────────
+    private const double SpiralA      = 20.0;  // inner start radius
+    private const double SpiralB      = 46.0;  // radial gap between arms
+    private const double TurnsForNotes = 2.0;
+    private const int    TotalNotes   = 12;
+    private const double SegmentThickness = 10.0; // base stroke width in SVG units
+    private const double SegmentGapFrac   = 0.06; // fraction of each segment trimmed per end for gaps
+
+    private static (double X, double Y) SpiralPoint(double theta)
+    {
+        var r = SpiralA + SpiralB * (theta / (2.0 * Math.PI));
+        return (Math.Cos(theta - Math.PI / 2.0) * r,
+                Math.Sin(theta - Math.PI / 2.0) * r);
+    }
+
+    // A note-segment record with everything needed to render the arc.
+    private record NoteSegment(
+        int    CofIndex,
+        string ArcPath,
+        double MidX, double MidY,    // midpoint on the arc
+        double NormalX, double NormalY, // outward unit normal at midpoint
+        string RatioLabel             // shown in ratio mode
+    );
+
+    // Builds segment arc paths for the current mode.
+    // In Notes mode each segment spans an equal fraction of the total arc.
+    // In Ratio mode each segment's arc length is proportional to its
+    // just-intonation interval step size.
+    private IReadOnlyList<NoteSegment> BuildSegments()
+    {
+        const int   steps      = 60;   // polyline segments per note arc
+        const double totalTheta = TurnsForNotes * 2.0 * Math.PI;
+
+        // Build cumulative theta boundaries for each note.
+        double[] weights = _ratioMode
+            ? MusicTheoryService.CofRatioWeights()
+            : Enumerable.Repeat(1.0 / TotalNotes, TotalNotes).ToArray();
+
+        // Normalise weights to sum exactly to 1
+        var weightSum = weights.Sum();
+        var startTheta = new double[TotalNotes + 1];
+        startTheta[0] = 0;
+        for (int i = 0; i < TotalNotes; i++)
+            startTheta[i + 1] = startTheta[i] + (weights[i] / weightSum) * totalTheta;
+
+        // Ratio labels in CoF order (semitone of each CoF note)
+        var ratioLabels = MusicTheoryService.CircleOfFifths
+            .Select(n => MusicTheoryService.SemitoneRatios[MusicTheoryService.NoteIndex(n)].Label)
+            .ToArray();
+
+        var result = new List<NoteSegment>(TotalNotes);
+        for (int i = 0; i < TotalNotes; i++)
+        {
+            var t0    = startTheta[i];
+            var t1    = startTheta[i + 1];
+            var span  = t1 - t0;
+            var gap   = span * SegmentGapFrac;
+            var tStart = t0 + gap;
+            var tEnd   = t1 - gap;
+
+            // Build polyline path
+            var sb = new System.Text.StringBuilder();
+            for (int s = 0; s <= steps; s++)
+            {
+                var theta = tStart + s * (tEnd - tStart) / steps;
+                var (x, y) = SpiralPoint(theta);
+                sb.Append(s == 0 ? $"M {x.I()} {y.I()}" : $" L {x.I()} {y.I()}");
+            }
+
+            // Midpoint
+            var tMid        = (tStart + tEnd) / 2.0;
+            var (mx, my)    = SpiralPoint(tMid);
+
+            // Outward normal: derivative of spiral rotated 90 degrees outward
+            var dt          = 0.001;
+            var (ax, ay)    = SpiralPoint(tMid - dt);
+            var (bx, by)    = SpiralPoint(tMid + dt);
+            var tx          = bx - ax; var ty = by - ay;  // tangent
+            var len         = Math.Sqrt(tx * tx + ty * ty);
+            // Normal pointing outward (away from origin at that point)
+            var nx = -ty / len; var ny = tx / len;
+            // Ensure it points away from origin
+            if (nx * mx + ny * my < 0) { nx = -nx; ny = -ny; }
+
+            result.Add(new NoteSegment(i, sb.ToString(), mx, my, nx, ny, ratioLabels[i]));
+        }
+        return result;
+    }
+
+    // ── Selection ────────────────────────────────────────────────────────────
+    private int _selectedCofIdx => SelectedNote is null
+        ? -1
+        : Array.IndexOf(MusicTheoryService.CircleOfFifths, SelectedNote);
+
+    private void SelectNote(string note)
+    {
+        if (_dragMoved) { _dragMoved = false; return; }
+        SelectedNote  = SelectedNote == note ? null : note;
+        ActiveChord   = null;
+        _focusedNote  = null;
+        OnChordSelected.InvokeAsync(null);
+    }
+
+    private void ClearSelection()
+    {
+        SelectedNote  = null;
+        ActiveChord   = null;
+        _focusedNote  = null;
+        OnChordSelected.InvokeAsync(null);
+    }
+
+    private async Task SelectChord(NoteChord chord)
+    {
+        var toggling = ActiveChord?.DisplayName == chord.DisplayName;
+        ActiveChord  = toggling ? null : chord;
+        _focusedNote = toggling ? null : chord.Root;
+        await OnChordSelected.InvokeAsync(ActiveChord);
+        if (ActiveChord is not null) await PlayActiveChord();
+    }
+
+    private async Task PlayActiveChord()
+    {
+        if (ActiveChord is null) return;
+        var notes = ActiveChord.AbsoluteNotes
+            .Select(n => $"{MusicTheoryService.NoteAtIndex(n)}4")
+            .ToArray();
+        await JS.InvokeVoidAsync("fretlessAudio.playChord", (object)notes);
+    }
+
+    private static MarkupString SvgText(double x, double y, string fontSize, string style, string? content) =>
+        new($"<text x=\"{x.I()}\" y=\"{y.I()}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"{fontSize}\" style=\"{style}\">{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(content ?? string.Empty)}</text>");
+}

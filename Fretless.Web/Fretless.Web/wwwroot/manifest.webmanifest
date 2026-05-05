@@ -1,0 +1,17 @@
+{
+  "name": "Fretless",
+  "short_name": "Fretless",
+  "description": "Explore chords through the circle of fifths",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0d1a",
+  "theme_color": "#FFD700",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

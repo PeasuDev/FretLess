@@ -1,0 +1,57 @@
+/* ── Mood Legend ─────────────────────────────────────────── */
+.mood-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+/* Reset native button appearance */
+.mood-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid var(--mood-color);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    font-size: 0.78rem;
+    font-family: inherit;
+    background: transparent;
+    text-align: left;
+    line-height: inherit;
+}
+
+.mood-item.inactive {
+    /* 0.38 keeps text visible enough for low-vision users at this small size */
+    opacity: 0.38;
+    color: #fff;
+}
+
+.mood-item.inactive:hover {
+    opacity: 0.65;
+}
+
+.mood-item.active {
+    opacity: 1;
+    color: var(--mood-color);
+    background: transparent;
+}
+
+.mood-item:focus-visible {
+    outline: 2px solid #FFD700;
+    outline-offset: 2px;
+}
+
+.mood-label {
+    white-space: nowrap;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.mood-mode {
+    font-size: 0.65rem;
+    white-space: nowrap;
+    font-style: italic;
+    opacity: 0.7;
+}

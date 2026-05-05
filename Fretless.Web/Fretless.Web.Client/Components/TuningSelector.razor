@@ -1,0 +1,132 @@
+@using Fretless.Web.Client.Models
+
+<div class="tuning-selector @(Inline ? "tuning-selector--inline" : "")">
+    @if (!Inline)
+    {
+        <div class="tuning-header">
+            <h2 class="tuning-title">Tuning</h2>
+            <button class="tuning-toggle" @onclick="ToggleExpanded" title="@(IsExpanded ? "Collapse" : "Expand")">
+                @(IsExpanded ? "▲" : "▼")
+            </button>
+        </div>
+    }
+
+    <div class="tuning-preset-row">
+        <select class="tuning-preset-select" value="@_selectedPresetName" @onchange="OnPresetChanged">
+            @foreach (var preset in TuningService.Presets)
+            {
+                <option value="@preset.Name">@preset.Name</option>
+            }
+        </select>
+        <button class="tuning-reset-btn" @onclick="ResetToPreset" title="Reset strings to preset">↺</button>
+        @if (Inline)
+        {
+            <button class="tuning-toggle" @onclick="ToggleExpanded" title="@(IsExpanded ? "Hide details" : "Show details")">
+                @(IsExpanded ? "▲" : "▼")
+            </button>
+        }
+    </div>
+
+    @if (IsExpanded)
+    {
+        <div class="tuning-strings">
+            <div class="tuning-string-count-row">
+                <label class="tuning-label">Strings</label>
+                <div class="string-count-controls">
+                    <button class="string-count-btn" @onclick="RemoveString"
+                            disabled="@(_strings.Count <= 1)">−</button>
+                    <span class="string-count-value">@_strings.Count</span>
+                    <button class="string-count-btn" @onclick="AddString"
+                            disabled="@(_strings.Count >= MaxStrings)">+</button>
+                </div>
+            </div>
+
+            @for (int i = 0; i < _strings.Count; i++)
+            {
+                var idx = i;
+                var stringNum = i + 1;
+                <div class="tuning-string-row">
+                    <span class="string-num">@stringNum</span>
+                    <span class="string-icon" style="height: @(1.0 + idx * 0.35)px">━</span>
+                    <select class="string-note-select"
+                            value="@_strings[idx]"
+                            @onchange="e => OnStringNoteChanged(idx, e)">
+                        @foreach (var (midi, label) in TuningService.AllNotes)
+                        {
+                            <option value="@midi">@label</option>
+                        }
+                    </select>
+                    <span class="string-note-label">@TuningService.MidiLabel(_strings[idx])</span>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public TuningPreset Tuning { get; set; } = TuningService.Standard;
+    [Parameter] public EventCallback<TuningPreset> TuningChanged { get; set; }
+    [Parameter] public bool Inline { get; set; } = false;
+
+    private const int MaxStrings = 9;
+
+    private List<int> _strings = [..TuningService.Standard.MidiNotes];
+    private string _selectedPresetName = TuningService.Standard.Name;
+    private bool IsExpanded { get; set; } = false;
+
+    protected override void OnParametersSet()
+    {
+        if (_strings.SequenceEqual(Tuning.MidiNotes)) return;
+        _strings = [..Tuning.MidiNotes];
+        _selectedPresetName = Tuning.Name;
+    }
+
+    private async Task OnPresetChanged(ChangeEventArgs e)
+    {
+        _selectedPresetName = e.Value?.ToString() ?? TuningService.Standard.Name;
+        var preset = TuningService.Presets.FirstOrDefault(p => p.Name == _selectedPresetName)
+                     ?? TuningService.Standard;
+        _strings = [..preset.MidiNotes];
+        await NotifyChanged(preset.Name);
+    }
+
+    private async Task ResetToPreset()
+    {
+        var preset = TuningService.Presets.FirstOrDefault(p => p.Name == _selectedPresetName)
+                     ?? TuningService.Standard;
+        _strings = [..preset.MidiNotes];
+        await NotifyChanged(preset.Name);
+    }
+
+    private async Task OnStringNoteChanged(int index, ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var midi))
+        {
+            _strings[index] = midi;
+            await NotifyChanged("Custom");
+            _selectedPresetName = "Custom";
+        }
+    }
+
+    private async Task AddString()
+    {
+        if (_strings.Count >= MaxStrings) return;
+        // Add a string tuned a 5th below the lowest current string
+        _strings.Insert(0, Math.Max(16, _strings[0] - 5));
+        await NotifyChanged("Custom");
+        _selectedPresetName = "Custom";
+    }
+
+    private async Task RemoveString()
+    {
+        if (_strings.Count <= 1) return;
+        _strings.RemoveAt(0);
+        await NotifyChanged("Custom");
+        _selectedPresetName = "Custom";
+    }
+
+    private void ToggleExpanded() => IsExpanded = !IsExpanded;
+
+    private async Task NotifyChanged(string name) =>
+        await TuningChanged.InvokeAsync(new TuningPreset(name, [.._strings]));
+}

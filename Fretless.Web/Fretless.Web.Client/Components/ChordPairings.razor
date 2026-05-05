@@ -1,0 +1,82 @@
+@using Fretless.Web.Client.Models
+@inject IJSRuntime JS
+
+@if (ActiveChord is not null)
+{
+    var pairings = MusicTheoryService.GetPairedChords(ActiveChord);
+    var resolved   = pairings.Where(p => p.Strength == PairingStrength.Resolved).ToList();
+    var suspended  = pairings.Where(p => p.Strength == PairingStrength.Suspended).ToList();
+
+    <div class="pairings-container">
+        <h3 class="pairings-title">
+            Sounds good with
+            <span class="pairings-chord-name"
+                  style="color:@MusicTheoryService.MoodColor(ActiveChord.Type.Mood)">
+                @ActiveChord.DisplayName
+            </span>
+        </h3>
+
+        <div class="pairings-group">
+            <span class="pairings-group-label">Resolved &amp; Diatonic</span>
+            <div class="pairings-chips">
+                @foreach (var p in resolved)
+                {
+                    var color = MusicTheoryService.NoteColorByName(p.Chord.Root);
+                    var dist  = MusicTheoryService.CofDistance(ActiveChord.Root, p.Chord.Root);
+                    <button class="pairing-chip"
+                            style="--chip-color:@color"
+                            title="@p.Relationship"
+                            @onclick="() => SelectPairing(p)">
+                        <span class="chip-name">@p.Chord.DisplayName</span>
+                        <span class="chip-rel">@p.Relationship</span>
+                        <span class="chip-dist" title="@dist CoF step(s) away">@CofDistanceLabel(dist)</span>
+                    </button>
+                }
+            </div>
+        </div>
+
+        <div class="pairings-group">
+            <span class="pairings-group-label">Suspended &amp; Borrowed</span>
+            <div class="pairings-chips">
+                @foreach (var p in suspended)
+                {
+                    var color = MusicTheoryService.NoteColorByName(p.Chord.Root);
+                    var dist  = MusicTheoryService.CofDistance(ActiveChord.Root, p.Chord.Root);
+                    <button class="pairing-chip pairing-chip--colour"
+                            style="--chip-color:@color"
+                            title="@p.Relationship"
+                            @onclick="() => SelectPairing(p)">
+                        <span class="chip-name">@p.Chord.DisplayName</span>
+                        <span class="chip-rel">@p.Relationship</span>
+                        <span class="chip-dist" title="@dist CoF step(s) away">@CofDistanceLabel(dist)</span>
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public NoteChord? ActiveChord { get; set; }
+    [Parameter] public EventCallback<NoteChord> ChordSelected { get; set; }
+
+    private async Task SelectPairing(ChordPairing pairing)
+    {
+        await ChordSelected.InvokeAsync(pairing.Chord);
+        // Play the chord via Web Audio
+        var notes = pairing.Chord.AbsoluteNotes.Select(n => $"{MusicTheoryService.NoteAtIndex(n)}4").ToArray();
+        await JS.InvokeVoidAsync("fretlessAudio.playChord", (object)notes);
+    }
+
+    // Dot-based visual indicator: 1 dot (close) → 6 dots (tritone/furthest)
+    private static string CofDistanceLabel(int dist) => dist switch
+    {
+        1 => "●○○○○○",
+        2 => "●●○○○○",
+        3 => "●●●○○○",
+        4 => "●●●●○○",
+        5 => "●●●●●○",
+        6 => "●●●●●●",
+        _ => ""
+    };
+}

@@ -1,0 +1,212 @@
+/* ── Home page layout — spiral fills the full viewport ──── */
+.fretless-layout {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+}
+
+/* Spiral fills every pixel */
+.wheel-layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    container-type: size;
+}
+
+/* Floating header — top-left */
+.fretless-header {
+    position: absolute;
+    top: 1rem;
+    left: 1.25rem;
+    z-index: 10;
+}
+
+.site-title {
+    font-size: clamp(1.1rem, 3vw, 1.6rem);
+    font-weight: 800;
+    color: #FFD700;
+    margin: 0;
+    letter-spacing: 0.06em;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+}
+
+.site-subtitle {
+    color: #aaaacc;
+    margin: 0.1rem 0 0;
+    font-size: clamp(0.65rem, 1.5vw, 0.78rem);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+}
+
+/* Floating right panel */
+.legend-section {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 10;
+    width: clamp(180px, 18vw, 230px);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: rgba(13,13,26,0.72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 0.85rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+
+.legend-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #aaaacc;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 0 0 0.4rem;
+}
+
+.fretboard-section--collapsed {
+    height: auto !important;
+    padding-bottom: 0;
+    overflow: hidden;
+}
+
+.fretboard-section--collapsed .fretboard-resize-handle {
+    cursor: pointer;
+    min-height: 44px;
+}
+
+/* Guitar icon toggle button — floats bottom-left when panel is collapsed */
+.fretboard-toggle-btn {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 11;
+    background: rgba(13,13,26,0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(192,160,96,0.35);
+    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #C0A060;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    padding: 0;
+}
+
+.fretboard-toggle-btn:hover {
+    background: rgba(30,20,50,0.92);
+    border-color: rgba(192,160,96,0.7);
+    transform: scale(1.08);
+}
+
+.fretboard-toggle-btn:focus-visible {
+    outline: 2px solid #FFD700;
+    outline-offset: 2px;
+}
+
+/* Minimize / expand button inside the resize handle */
+.fretboard-minimize-btn {
+    position: absolute;
+    right: 0.75rem;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.35);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    transition: color 0.2s, background 0.2s;
+    line-height: 1;
+}
+
+.fretboard-minimize-btn:hover {
+    color: #C0A060;
+    background: rgba(255,255,255,0.07);
+}
+
+.fretboard-minimize-btn:focus-visible {
+    outline: 2px solid #FFD700;
+    outline-offset: 2px;
+}
+
+/* Floating bottom panel */
+.fretboard-section {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    /* keep right edge flush with the legend panel: 1rem gap + panel width + 1rem outer */
+    right: calc(clamp(180px, 18vw, 230px) + 2rem);
+    z-index: 10;
+    background: rgba(13,13,26,0.78);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 0 1rem 0.75rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.fretboard-resize-handle {
+    width: 100%;
+    /* 44px meets WCAG 2.5.5 minimum touch-target size */
+    min-height: 44px;
+    cursor: ns-resize;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+    position: relative;
+}
+
+.fretboard-resize-handle::after {
+    content: '';
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.25);
+    pointer-events: none;
+}
+
+.fretboard-resize-handle:focus-visible {
+    outline: 2px solid #FFD700;
+    outline-offset: -2px;
+}
+
+/* Responsive: stack everything on narrow screens */
+@media (max-width: 680px) {
+    .fretless-header {
+        top: 0.6rem;
+        left: 0.75rem;
+    }
+
+    .legend-section {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: auto;
+        max-height: 40dvh;
+        border-radius: 12px 12px 0 0;
+        padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+    }
+
+    .fretboard-section {
+        display: none;
+    }
+}

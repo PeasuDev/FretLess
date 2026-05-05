@@ -1,0 +1,186 @@
+/* ── Chord Wheel ─────────────────────────────────────────── */
+.chord-wheel-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.chord-wheel-svg-wrapper {
+    width: min(100cqw, 100cqh, 500px);
+    height: min(100cqw, 100cqh, 500px);
+    flex-shrink: 0;
+}
+
+.chord-wheel {
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.2s;
+}
+
+.note-segment path,
+.chord-segment path {
+    transition: opacity 0.15s;
+}
+
+.note-segment:hover path,
+.chord-segment:hover path {
+    opacity: 0.8 !important;
+}
+
+.chord-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid;
+    border-radius: 8px;
+    width: 100%;
+    max-width: min(calc(100vw - 300px), calc(100vh - 160px), 500px);
+    flex-wrap: wrap;
+}
+
+.chord-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    min-width: 3rem;
+}
+
+.chord-type-name {
+    font-size: 0.9rem;
+    color: #aaaacc;
+}
+
+.chord-desc {
+    font-size: 0.8rem;
+    color: #888899;
+    flex: 1;
+}
+
+.play-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #ffffff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    transition: background 0.15s;
+}
+
+.play-btn:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* ── Key legend ──────────────────────────────────────────── */
+/* (removed — replaced by diatonic-panel) */
+
+/* ── Diatonic chord cards ────────────────────────────────── */
+.diatonic-panel {
+    width: 100%;
+    max-width: min(calc(100vw - 300px), calc(100vh - 160px), 500px);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.diatonic-panel-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.diatonic-panel-title {
+    font-size: 0.85rem;
+    color: #ccccdd;
+}
+
+.diatonic-panel-title strong {
+    color: #FFD700;
+}
+
+.diatonic-panel-hint {
+    font-size: 0.72rem;
+    color: #666677;
+}
+
+.diatonic-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.diatonic-group-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #666677;
+}
+
+.diatonic-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.diatonic-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    padding: 0.45rem 0.65rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-left: 3px solid var(--role-color);
+    border-radius: 7px;
+    cursor: pointer;
+    text-align: left;
+    min-width: 90px;
+    flex: 1;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    color: inherit;
+}
+
+.diatonic-card:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateY(-1px);
+}
+
+.diatonic-card--active {
+    background: rgba(255,255,255,0.12);
+    border-color: var(--role-color);
+    border-left-color: var(--role-color);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--role-color) 40%, transparent);
+}
+
+.diatonic-card-roman {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--role-color);
+}
+
+.diatonic-card-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1;
+}
+
+.diatonic-card-type {
+    font-size: 0.7rem;
+    color: #aaaacc;
+}
+
+.diatonic-card-desc {
+    font-size: 0.67rem;
+    color: #666677;
+    line-height: 1.3;
+    margin-top: 0.15rem;
+}

@@ -1,0 +1,167 @@
+/* ── Spiral Wheel ─────────────────────────────────────────── */
+.spiral-wheel-container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.spiral-toolbar {
+    position: absolute;
+    top: 0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    z-index: 20;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.spiral-zoom-btn {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #ffffff;
+    font-size: 1rem;
+    /* 44×44px minimum touch target (WCAG 2.5.5) */
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+}
+
+.spiral-zoom-btn:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+.spiral-zoom-btn:focus-visible {
+    outline: 2px solid #FFD700;
+    outline-offset: 2px;
+}
+
+.spiral-mode-btn {
+    width: auto;
+    padding: 0 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-color: rgba(255,215,0,0.25);
+}
+
+.spiral-mode-btn.active {
+    background: rgba(255,215,0,0.15);
+    border-color: rgba(255,215,0,0.55);
+    color: #FFD700;
+}
+
+.note-segment path {
+    transition: stroke-width 0.2s, opacity 0.2s;
+}
+
+.note-segment:hover path:first-child {
+    opacity: 0.85;
+}
+
+.spiral-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+.spiral-svg.dragging {
+    cursor: grabbing;
+}
+
+.spiral-svg:active {
+    cursor: grabbing;
+}
+
+.spiral-node circle {
+    transition: r 0.2s, fill 0.2s;
+}
+
+.spiral-node:hover circle {
+    opacity: 0.8;
+}
+
+
+/* ── Chord info bar — floats bottom-left over the spiral ──────── */
+.spiral-chord-info {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    /* never overflow the right edge of the container */
+    right: 1rem;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 1rem;
+    background: rgba(13,13,26,0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid;
+    border-radius: 10px;
+    max-width: 420px;
+    flex-wrap: wrap;
+}
+
+.spiral-chord-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    min-width: 3rem;
+}
+
+.spiral-chord-type {
+    font-size: 0.9rem;
+    color: #aaaacc;
+}
+
+.spiral-chord-desc {
+    font-size: 0.8rem;
+    color: #888899;
+    flex: 1;
+}
+
+.spiral-chord-mode {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    white-space: nowrap;
+}
+
+.play-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #ffffff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.play-btn:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.play-btn:focus-visible {
+    outline: 2px solid #FFD700;
+    outline-offset: 2px;
+}

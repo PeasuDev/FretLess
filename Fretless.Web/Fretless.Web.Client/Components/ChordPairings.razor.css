@@ -1,0 +1,105 @@
+/* ── Chord Pairings panel ────────────────────────────────── */
+.pairings-container {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 1rem 1.1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.pairings-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #aaaacc;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+
+.pairings-chord-name {
+    font-size: 1.05rem;
+    font-weight: 800;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.pairings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.pairings-group-label {
+    font-size: 0.68rem;
+    color: #666688;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+}
+
+.pairings-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+/* Each chip */
+.pairing-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid var(--chip-color, #555577);
+    border-radius: 8px;
+    padding: 0.35rem 0.65rem;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    min-width: 54px;
+    color: inherit;
+    font-family: inherit;
+}
+
+.pairing-chip:hover {
+    background: color-mix(in srgb, var(--chip-color) 22%, transparent);
+    transform: translateY(-1px);
+}
+
+.pairing-chip:active {
+    transform: translateY(0);
+}
+
+.chip-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--chip-color, #ddddf0);
+    line-height: 1.2;
+}
+
+.chip-rel {
+    font-size: 0.6rem;
+    color: #888899;
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.chip-dist {
+    font-size: 0.52rem;
+    letter-spacing: 0.05em;
+    color: var(--chip-color, #888899);
+    opacity: 0.7;
+    line-height: 1.2;
+    text-align: center;
+}
+
+/* Colour/borrowed chips are slightly muted */
+.pairing-chip--colour {
+    border-style: dashed;
+    opacity: 0.85;
+}
+
+.pairing-chip--colour:hover {
+    opacity: 1;
+}

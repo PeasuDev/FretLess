@@ -1,0 +1,105 @@
+@using Fretless.Web.Client.Models
+
+<div class="scale-selector">
+    <div class="scale-selector-header"
+         @onclick="ToggleExpanded"
+         role="button"
+         tabindex="0"
+         aria-expanded="@Expanded.ToString().ToLowerInvariant()"
+         aria-controls="scale-selector-body"
+         style="cursor:pointer"
+         @onkeydown="OnHeaderKeyDown">
+        <span class="scale-selector-title">🎸 Solo Scale</span>
+        <span class="scale-expand-icon" aria-hidden="true">@(Expanded ? "▲" : "▼")</span>
+    </div>
+
+    @if (Expanded)
+    {
+        <div class="scale-selector-body" id="scale-selector-body">
+            <div class="scale-row">
+                <label class="scale-field-label" for="scale-key-select">Key</label>
+                <select id="scale-key-select" class="scale-select" value="@SelectedRoot" @onchange="OnRootChanged">
+                    @foreach (var note in MusicTheoryService.CircleOfFifths)
+                    {
+                        <option value="@note">@MusicTheoryService.DisplayName(note)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="scale-row">
+                <label class="scale-field-label" for="scale-name-select">Scale</label>
+                <select id="scale-name-select" class="scale-select" value="@SelectedScaleName" @onchange="OnScaleChanged">
+                    @foreach (var scale in MusicTheoryService.Scales)
+                    {
+                        <option value="@scale.Name">@scale.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="scale-actions">
+                @if (ActiveOverlay is not null)
+                {
+                    <button class="scale-btn scale-btn--clear" @onclick="Clear">Clear</button>
+                }
+            </div>
+
+            @if (ActiveOverlay is not null)
+            {
+                <div class="scale-active-badge"
+                     title="@ActiveOverlay.DisplayName">
+                    <span class="scale-root-dot"></span>
+                    @ActiveOverlay.DisplayName
+                    — @ActiveOverlay.NoteSet.Count notes
+                </div>
+                <div class="scale-notes-row">
+                    @foreach (var idx in ActiveOverlay.NoteSet.OrderBy(n => (n - ActiveOverlay.RootIndex + 12) % 12))
+                    {
+                        var isRoot = idx == ActiveOverlay.RootIndex;
+                        <span class="scale-note-chip @(isRoot ? "scale-note-chip--root" : "")">
+                            @MusicTheoryService.NoteAtIndex(idx)
+                        </span>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public ScaleOverlay? ActiveOverlay { get; set; }
+    [Parameter] public EventCallback<ScaleOverlay?> ActiveOverlayChanged { get; set; }
+
+    private bool Expanded { get; set; } = true;
+    private string SelectedRoot { get; set; } = "C";
+    private string SelectedScaleName { get; set; } = "Pentatonic Minor";
+
+    private void ToggleExpanded() => Expanded = !Expanded;
+
+    private void OnHeaderKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key is "Enter" or " ")
+            ToggleExpanded();
+    }
+
+    private async Task OnRootChanged(ChangeEventArgs e)
+    {
+        SelectedRoot = e.Value?.ToString() ?? "C";
+        await ApplyScale();
+    }
+
+    private async Task OnScaleChanged(ChangeEventArgs e)
+    {
+        SelectedScaleName = e.Value?.ToString() ?? MusicTheoryService.Scales[0].Name;
+        await ApplyScale();
+    }
+
+    private async Task ApplyScale()
+    {
+        var scale = MusicTheoryService.Scales.FirstOrDefault(s => s.Name == SelectedScaleName)
+                    ?? MusicTheoryService.Scales[0];
+        await ActiveOverlayChanged.InvokeAsync(new ScaleOverlay(SelectedRoot, scale));
+    }
+
+    private async Task Clear() =>
+        await ActiveOverlayChanged.InvokeAsync(null);
+}
