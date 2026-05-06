@@ -1,27 +1,41 @@
-@using Fretless.Web.Client.Models
+@using System.Text.Encodings.Web
 @inject IJSRuntime JS
 
 <div class="spiral-wheel-container">
-    <div class="spiral-toolbar" role="toolbar" aria-label="Spiral wheel controls">
-        <button class="spiral-zoom-btn" @onclick="ZoomIn"  aria-label="Zoom in">+</button>
-        <button class="spiral-zoom-btn" @onclick="ZoomOut" aria-label="Zoom out">−</button>
-        <button class="spiral-zoom-btn" @onclick="ResetZoom" aria-label="Reset view">R</button>
-        <button class="spiral-zoom-btn spiral-mode-btn @(_ratioMode ? "active" : "")"
-                @onclick="ToggleMode"
-                aria-label="@(_ratioMode ? "Switch to notes mode" : "Switch to ratio mode")"
-                aria-pressed="@_ratioMode.ToString().ToLowerInvariant()">
-            @(_ratioMode ? "Ratio" : "Notes")
-        </button>
-        @if (SelectedNote is not null)
-        {
-            <button class="spiral-zoom-btn" @onclick="ClearSelection" aria-label="Clear selection">✕</button>
-        }
+    <div class="spiral-key-selector" aria-label="Chart key selector">
+        <label for="chart-key-select">Key</label>
+        <select id="chart-key-select" class="spiral-control spiral-control--key-select" @bind="SelectedKey" aria-label="Select key">
+            <option value=""></option>
+            @foreach (var key in AvailableKeys)
+            {
+                <option value="@key">@key</option>
+            }
+        </select>
+
+        <label for="chart-scale-select">Scale</label>
+        <select id="chart-scale-select" class="spiral-control spiral-control--scale-select" @bind="SelectedScale" aria-label="Select scale">
+            <option value=""></option>
+            @foreach (var scale in AvailableScaleNames)
+            {
+                <option value="@scale">@scale</option>
+            }
+        </select>
+    </div>
+
+    <div class="spiral-toolbar" role="toolbar" aria-label="Spiral foundation controls">
+        <button class="spiral-control" @onclick="ZoomOut" aria-label="Zoom out">−</button>
+        <button class="spiral-control" @onclick="ResetZoom" aria-label="Reset to fully zoomed out view">R</button>
+        <button class="spiral-control" @onclick="ZoomIn" aria-label="Zoom in">+</button>
+        <span class="spiral-divider" aria-hidden="true"></span>
+        <button class="spiral-control spiral-control--wide @(IsSurfaceView ? "active" : null)" @onclick="ShowSurface">Zoomed Out</button>
+        <button class="spiral-control spiral-control--wide @(IsZoomedView ? "active" : null)" @onclick="ShowZoomedIn">Zoomed In</button>
+        <button class="spiral-control spiral-control--wide" @onclick="PreviewShapeShrinkAsync" disabled="@_isPreviewing">Preview</button>
     </div>
 
     <svg @ref="_svgRef"
          viewBox="@_viewBox"
          xmlns="http://www.w3.org/2000/svg"
-         class="spiral-svg @(_isDragging ? "dragging" : "")"
+         class="spiral-svg @(_isDragging ? "dragging" : null)"
          @onwheel="OnWheel"
          @onpointerdown="OnPointerDown"
          @onpointermove="OnPointerMove"
@@ -29,431 +43,2395 @@
          @onpointerleave="OnPointerUp"
          preserveAspectRatio="xMidYMid meet"
          role="img"
-         aria-label="Fretless spiral chord wheel">
+         aria-label="Subdivision-aware zooming spiral foundation">
 
         <defs>
             <radialGradient id="spiralBg" cx="50%" cy="50%" r="50%">
-                <stop offset="0%"   stop-color="#1a1a2e" stop-opacity="1" />
+                <stop offset="0%" stop-color="#1a1a2e" stop-opacity="1" />
                 <stop offset="100%" stop-color="#0d0d1a" stop-opacity="1" />
             </radialGradient>
-
-            @* Per-connector linear gradients — regenerated whenever selection changes *@
-            @if (_selectedCofIdx >= 0)
-            {
-                var selColor = MusicTheoryService.NoteColor(_selectedCofIdx, 80, 65);
-                var gradSegs = BuildSegments();
-                var gradRoles = MusicTheoryService.GetKeyRelationships(_selectedCofIdx);
-                var gradSel  = gradSegs.FirstOrDefault(s => MusicTheoryService.CircleOfFifths[s.CofIndex] == SelectedNote);
-                if (gradSel is not null)
-                {
-                    foreach (var gSeg in gradSegs)
-                    {
-                        var gRole = gradRoles.GetValueOrDefault(gSeg.CofIndex);
-                        if (gRole is null) continue;
-                        var gNote = MusicTheoryService.CircleOfFifths[gSeg.CofIndex];
-                        if (gNote == SelectedNote) continue;
-                        // gradientUnits="userSpaceOnUse" lets us use actual SVG coordinates
-                        <linearGradient id="conn-grad-@gSeg.CofIndex"
-                                        gradientUnits="userSpaceOnUse"
-                                        x1="@gradSel.MidX.I()" y1="@gradSel.MidY.I()"
-                                        x2="@gSeg.MidX.I()"    y2="@gSeg.MidY.I()">
-                            <stop offset="0%"   stop-color="@selColor"   stop-opacity="1" />
-                            <stop offset="100%" stop-color="@gRole.Color" stop-opacity="1" />
-                        </linearGradient>
-                    }
-                }
-            }
         </defs>
 
-        @* Background *@
         <rect x="-500" y="-500" width="1000" height="1000" fill="url(#spiralBg)" />
 
-        @* ── Note segments (beads on the spiral string) ── *@
         @{
-            var segments   = BuildSegments();
-            var keyRoles   = _selectedCofIdx >= 0
-                             ? MusicTheoryService.GetKeyRelationships(_selectedCofIdx)
-                             : null;
-            var diatonicByNote = _selectedCofIdx >= 0
-                             ? MusicTheoryService.GetDiatonicChords(_selectedCofIdx)
-                                 .GroupBy(d => d.Chord.Root)
-                                 .ToDictionary(g => g.Key, g => g.First())
-                             : null;
-            var isFocusMode = _focusedNote is not null;
+            var surfaceBlend = SurfaceBlend;
+            var arcBlend = 1.0 - surfaceBlend;
+            var layerSeparatorBlend = OvertoneLayerSeparatorBlend;
+            var seamFadeBlend = SmoothStep(0.18, 1.0, layerSeparatorBlend);
+            var segments = BuildSegments(arcBlend, seamFadeBlend);
+            var keySubdivisionIndex = KeySubdivisionIndex;
+            var graphRotationDegrees = _graphRotationDegrees;
+            var hasSelectedNotes = _selectedNotes.Count > 0;
+            var nonSelectedSliceOpacity = _selectedNotes.Count switch
+            {
+                0 => 1.0,
+                1 => 0.82,
+                _ => 0.38
+            };
+            var surfaceSliceOpacity = 1.0 - seamFadeBlend;
+            var surfacePointerEvents = surfaceSliceOpacity <= 0.001 ? "none" : "auto";
+            var segmentOpacity = seamFadeBlend;
+            var segmentPointerEvents = segmentOpacity <= 0.001 ? "none" : "auto";
+            var ringStroke = (0.55 / _zoom).I();
+            var separatorStroke = (2.2 / _zoom).I();
+            var layerSeparatorOpacity = layerSeparatorBlend.I();
+            var dashArray = $"{(2.0 / _zoom).I()} {(7.0 / _zoom).I()}";
+            var surfaceLabelOpacity = (1.0 - seamFadeBlend) * 0.95;
+            var overtoneLabelOpacity = seamFadeBlend * 0.9;
+        }
+        <g transform="rotate(@graphRotationDegrees.I())">
+            <g style="pointer-events:@surfacePointerEvents" opacity="@surfaceSliceOpacity.I()">
+                @foreach (var slice in BuildSolidSurfaceSlices())
+                {
+                    var sliceSelected = IsSubdivisionSelected(slice.SubdivisionIndex);
+                    var isKeySlice = slice.SubdivisionIndex == keySubdivisionIndex;
+                    var isNotInScale = IsNoteOutsideSelectedScale(slice.SubdivisionIndex);
+                    var sliceIsBlocked = isNotInScale && !sliceSelected;
+                    var sliceOpacity = sliceSelected ? 1.0 : (isNotInScale ? 0.3 : nonSelectedSliceOpacity);
+                    <g class="spiral-segment spiral-note @(sliceSelected ? "spiral-note--selected" : null)"
+                       @onclick="() => HandleNoteClickAsync(slice.SubdivisionIndex, null)"
+                       style="cursor:@(sliceIsBlocked ? "not-allowed" : "pointer")">
+                        <path d="@slice.Path" fill="@slice.Color" stroke="none" opacity="@sliceOpacity.I()" />
+                        @if (sliceSelected)
+                        {
+                            <path d="@slice.Path" fill="rgba(255,215,0,0.18)" stroke="#FFD700" stroke-width="@(2.5 / _zoom)" stroke-linejoin="round" />
+                        }
+                    </g>
+                }
+            </g>
+
+            <g opacity="@segmentOpacity.I()" style="pointer-events:@segmentPointerEvents">
+                @foreach (var segment in segments)
+                {
+                    var segSelected = IsSegmentSelected(segment.SubdivisionIndex, segment.Cycle);
+                    var isKeySegment = segment.SubdivisionIndex == keySubdivisionIndex;
+                    var isNotInScale = IsNoteOutsideSelectedScale(segment.SubdivisionIndex);
+                    var segmentIsBlocked = isNotInScale && !segSelected;
+                    var segmentNodeOpacity = segSelected ? 1.0 : (isNotInScale ? 0.3 : nonSelectedSliceOpacity);
+                    <g class="spiral-segment spiral-note @(segSelected ? "spiral-note--selected" : null)"
+                       @onclick="() => HandleNoteClickAsync(segment.SubdivisionIndex, segment.Cycle)"
+                       style="cursor:@(segmentIsBlocked ? "not-allowed" : "pointer")">
+                        <path d="@segment.MorphPath"
+                              fill="@segment.Color"
+                              stroke="none"
+                              opacity="@segmentNodeOpacity.I()" />
+                        @if (segSelected)
+                        {
+                            <path d="@segment.MorphPath" fill="rgba(255,215,0,0.18)" stroke="#FFD700" stroke-width="@(2.5 / _zoom)" stroke-linejoin="round" />
+                        }
+                    </g>
+                }
+            </g>
+
+
+
+            <circle cx="0" cy="0" r="@CenterHubRadius.I()" fill="#0d0d1a" />
+        </g>
+
+        @if (keySubdivisionIndex >= 0)
+        {
+            var centerLabelSize = 15.5 / _zoom;
+            @SvgText(0, 0, centerLabelSize,
+                "fill:#f5f5f5;font-family:'Helvetica Neue',sans-serif;font-weight:900;letter-spacing:0.02em;pointer-events:none",
+                SubdivisionRootLabel(keySubdivisionIndex))
         }
 
-        @* ── Connector lines from selected note to each diatonic note ── *@
-        @if (keyRoles is not null)
+        @if (TryBuildScaleDegreeLabels(out var scaleDegreeLabels))
         {
-            var selSeg = segments.FirstOrDefault(s => MusicTheoryService.CircleOfFifths[s.CofIndex] == SelectedNote);
-            if (selSeg is not null)
+            var degreeLabelSize = 11.5 / _zoom;
+            foreach (var degree in scaleDegreeLabels)
             {
-                foreach (var seg in segments)
-                {
-                    var role = keyRoles.GetValueOrDefault(seg.CofIndex);
-                    if (role is null) continue;
-                    var note = MusicTheoryService.CircleOfFifths[seg.CofIndex];
-                    if (note == SelectedNote) continue;
-                    if (isFocusMode && note != _focusedNote) continue;
-                    var lineColor = role.Color;
-
-                    // Perpendicular offset direction (normalised), always pointing away from SVG origin
-                    var dx  = seg.MidX - selSeg.MidX;
-                    var dy  = seg.MidY - selSeg.MidY;
-                    var len = Math.Sqrt(dx * dx + dy * dy);
-                    var px  = len > 0 ? -dy / len : 0.0;
-                    var py  = len > 0 ?  dx / len : 1.0;
-                    // Straight-line midpoint
-                    var smx = (selSeg.MidX + seg.MidX) / 2.0;
-                    var smy = (selSeg.MidY + seg.MidY) / 2.0;
-                    if (px * smx + py * smy < 0) { px = -px; py = -py; }
-
-                    // Quadratic control point: bulge perpendicularly outward from centre
-                    var bulge = len * 0.25;
-                    var qcx   = smx + px * bulge;
-                    var qcy   = smy + py * bulge;
-
-                    // Place labels at 65% along the curved arc (approx via linear interp)
-                    var lmx = selSeg.MidX + (seg.MidX - selSeg.MidX) * 0.65;
-                    var lmy = selSeg.MidY + (seg.MidY - selSeg.MidY) * 0.65;
-
-                    var labelOffset = 5.5 / _zoom;
-                    var fontSize    = $"{5.0 / _zoom}";
-                    var gradId      = $"conn-grad-{seg.CofIndex}";
-
-                    <path d="M @selSeg.MidX.I() @selSeg.MidY.I() Q @qcx.I() @qcy.I() @seg.MidX.I() @seg.MidY.I()"
-                          fill="none"
-                          stroke="url(#@gradId)"
-                          stroke-width="@(2.2 / _zoom)"
-                          stroke-linecap="round"
-                          opacity="0.7" />
-
-                    @* Human descriptor above the line *@
-                    @SvgText(lmx + px * labelOffset, lmy + py * labelOffset,
-                        fontSize,
-                        $"fill:{lineColor};font-family:'Helvetica Neue',sans-serif;font-weight:600;pointer-events:none;opacity:0.9",
-                        role.Label)
-
-                    @* Mode name below the line *@
-                    @SvgText(lmx - px * labelOffset, lmy - py * labelOffset,
-                        fontSize,
-                        $"fill:{lineColor};font-family:'Helvetica Neue',sans-serif;pointer-events:none;opacity:0.7",
-                        role.Mode)
-                }
+                var (degreeX, degreeY) = RotatePoint(degree.X, degree.Y, graphRotationDegrees);
+                @SvgText(degreeX, degreeY, degreeLabelSize,
+                    "fill:#f5f5f5;font-family:'Helvetica Neue',sans-serif;font-weight:800;letter-spacing:0.03em;pointer-events:none;opacity:0.92",
+                    degree.Text)
             }
         }
 
-        @foreach (var seg in segments)
+        @if (surfaceLabelOpacity > 0.001)
         {
-            var note           = MusicTheoryService.CircleOfFifths[seg.CofIndex];
-            var isSelected     = SelectedNote == note;
-            var role           = keyRoles?.GetValueOrDefault(seg.CofIndex);
-            var isDiatonic     = role is not null;
-            var isInactive     = keyRoles is not null && !isDiatonic && !isSelected;
-            var diatonicEntry  = diatonicByNote?.GetValueOrDefault(note);
-            var isActiveChord  = diatonicEntry is not null && ActiveChord?.DisplayName == diatonicEntry.Chord.DisplayName;
-
-            var baseColor  = MusicTheoryService.NoteColor(seg.CofIndex, 65, 42);
-            var segColor   = isSelected  ? "#ffffff"
-                           : isActiveChord ? MusicTheoryService.MoodColor(diatonicEntry!.Chord.Type.Mood)
-                           : isDiatonic  ? role!.Color
-                           : baseColor;
-            var opacity    = isFocusMode && !isSelected && note != _focusedNote ? "0.04"
-                           : isInactive  ? "0.07"
-                           : (isDiatonic && !isSelected && !isActiveChord) ? "0.6"
-                           : "1";
-            var thickness  = isSelected   ? SegmentThickness * 1.8 / _zoom
-                           : isActiveChord ? SegmentThickness * 1.5 / _zoom
-                           : isDiatonic   ? SegmentThickness * 0.9 / _zoom
-                           : SegmentThickness * 0.45 / _zoom;
-
-            // Diatonic arcs directly trigger chord selection; others select the note
-            var segNote = note;
-            var segEntry = diatonicEntry;
-
-            <g class="note-segment @(isSelected ? "selected" : isActiveChord ? "chord-active" : isDiatonic ? "diatonic" : "")"
-               @onclick="async () => { if (segEntry is not null) await SelectChord(segEntry.Chord); else SelectNote(segNote); }"
-               style="cursor:pointer"
-               opacity="@opacity">
-                <path d="@seg.ArcPath"
-                      fill="none"
-                      stroke="@segColor"
-                      stroke-width="@thickness.I()"
-                      stroke-linecap="round" />
-
-                @* Invisible wider hit area *@
-                <path d="@seg.ArcPath"
-                      fill="none"
-                      stroke="transparent"
-                      stroke-width="@(Math.Max(thickness, 18.0 / _zoom).I())"
-                      stroke-linecap="round" />
-
-                @* Note name on the arc *@
-                @SvgText(seg.MidX, seg.MidY,
-                    $"{(isSelected ? 11.0 : 9.0) / _zoom}",
-                    $"fill:{(isSelected ? "#1a1a2e" : "#ffffff")};font-family:'Helvetica Neue',sans-serif;font-weight:bold;pointer-events:none",
-                    _ratioMode ? seg.RatioLabel : MusicTheoryService.DisplayName(note))
-
-                @* Role + chord name label offset from midpoint *@
-                @if (isDiatonic && !isSelected && (!isFocusMode || note == _focusedNote))
-                {
-                    var lx = seg.MidX + seg.NormalX * 14.0 / _zoom;
-                    var ly = seg.MidY + seg.NormalY * 14.0 / _zoom;
-                    var chordLabel = diatonicEntry is not null
-                        ? $"{role!.Roman} · {diatonicEntry.Chord.DisplayName}"
-                        : role!.Roman + " " + role.Mode;
-                    var labelColor = isActiveChord
-                        ? MusicTheoryService.MoodColor(diatonicEntry!.Chord.Type.Mood)
-                        : role!.Color;
-                    @SvgText(lx, ly,
-                        $"{8.0 / _zoom}",
-                        $"fill:{labelColor};font-family:'Helvetica Neue',sans-serif;font-weight:700;pointer-events:none",
-                        chordLabel)
-                }
-                @if (isSelected && ActiveChord is not null)
-                {
-                    var selfRole = MusicTheoryService.GetKeyRelationships(seg.CofIndex).GetValueOrDefault(seg.CofIndex);
-                    var lx = seg.MidX + seg.NormalX * 14.0 / _zoom;
-                    var ly = seg.MidY + seg.NormalY * 14.0 / _zoom;
-                    @SvgText(lx, ly,
-                        $"{8.0 / _zoom}",
-                        $"fill:#FFD700;font-family:'Helvetica Neue',sans-serif;font-weight:700;pointer-events:none",
-                        "I · " + (selfRole?.Mode ?? "Ionian"))
-                }
-            </g>
+            var baseLabelSize = 13.5 / _zoom;
+            foreach (var label in BuildSurfaceLabels(segments))
+            {
+                var isSelected = IsSubdivisionSelected(label.SubdivisionIndex);
+                var isKeyLabel = label.SubdivisionIndex == keySubdivisionIndex;
+                var labelFill = "#111111";
+                var labelSize = isSelected ? baseLabelSize * 1.22 : baseLabelSize;
+                var (labelX, labelY) = RotatePoint(label.X, label.Y, graphRotationDegrees);
+                @SvgText(labelX, labelY, labelSize,
+                    $"fill:{labelFill};font-family:'Helvetica Neue',sans-serif;font-weight:800;letter-spacing:0.01em;pointer-events:none;opacity:{surfaceLabelOpacity.I()}",
+                    label.Text)
+            }
         }
 
-
+        @if (overtoneLabelOpacity > 0.001)
+        {
+            var baseLabelSize = 8.5 / _zoom;
+            foreach (var segment in segments)
+            {
+                var isSelected = IsSegmentSelected(segment.SubdivisionIndex, segment.Cycle);
+                var isKeySegment = segment.SubdivisionIndex == keySubdivisionIndex;
+                var labelFill = "#111111";
+                var labelSize = isSelected ? baseLabelSize * 1.22 : baseLabelSize;
+                var (labelX, labelY) = RotatePoint(segment.MidX, segment.MidY, graphRotationDegrees);
+                @SvgText(labelX, labelY, labelSize,
+                    $"fill:{labelFill};font-family:'Helvetica Neue',sans-serif;font-weight:700;pointer-events:none;opacity:{overtoneLabelOpacity.I()}",
+                    segment.Label)
+            }
+        }
     </svg>
 
-    @if (ActiveChord is not null)
-    {
-        <div class="spiral-chord-info" style="border-color:@MusicTheoryService.MoodColor(ActiveChord.Type.Mood)">
-            <span class="spiral-chord-name" style="color:@MusicTheoryService.MoodColor(ActiveChord.Type.Mood)">
-                @ActiveChord.DisplayName
-            </span>
-            <span class="spiral-chord-type">@ActiveChord.Type.Name</span>
-            <span class="spiral-chord-desc">@ActiveChord.Type.Description</span>
-            <span class="spiral-chord-mode" style="color:@MusicTheoryService.MoodColor(ActiveChord.Type.Mood)">
-                @ActiveChord.Type.Mood — @MusicTheoryService.MoodModeLabels[ActiveChord.Type.Mood]
-            </span>
-            <button class="play-btn" @onclick="PlayActiveChord">Play</button>
-        </div>
-    }
+    <div class="spiral-right-panel-stack" aria-label="Scale and note analysis panels">
+        <section class="spiral-instrument-overlay-panel" aria-label="Current scale on guitar and piano">
+            <h2>Scale overlay</h2>
+            @{
+                var overlaySemitones = GetInstrumentOverlaySemitones();
+                var overlayRoot = GetOverlayRootSemitone();
+                var hasSelectedOverlayPositionRange = TryGetSelectedOverlayPositionRange(out var overlayPositionStartFret, out var overlayPositionEndFret);
+            }
+
+            @if (overlaySemitones.Count == 0)
+            {
+                <p class="spiral-instrument-overlay-empty">Select notes or choose a key + scale to view instrument overlays.</p>
+            }
+            else
+            {
+                <div class="spiral-instrument-overlay-stack">
+                    <div class="spiral-instrument-overlay-card">
+                        <h3>Guitar fretboard</h3>
+                        <svg viewBox="0 0 330 120" class="spiral-mini-fretboard" role="img" aria-label="Selected notes on guitar fretboard">
+                            <rect x="0" y="0" width="330" height="120" rx="8" fill="#4b2b16" />
+
+                            @for (var fret = 0; fret <= OverlayFretCount; fret++)
+                            {
+                                var x = 20 + fret * 24;
+                                var isNut = fret == 0;
+                                <line x1="@x" y1="14" x2="@x" y2="106" stroke="@(isNut ? "#e8e8c8" : "#c0a060")" stroke-width="@(isNut ? 4 : 1.2)" />
+                            }
+
+                            @for (var stringIndex = 0; stringIndex < StandardGuitarOpenSemitones.Length; stringIndex++)
+                            {
+                                var y = 22 + stringIndex * 16;
+                                <line x1="20" y1="@y" x2="308" y2="@y" stroke="#d4c078" stroke-width="@(1.0 + (5 - stringIndex) * 0.2)" />
+
+                                for (var fret = 0; fret <= OverlayFretCount; fret++)
+                                {
+                                    var semitone = (StandardGuitarOpenSemitones[stringIndex] + fret) % 12;
+                                    if (!overlaySemitones.Contains(semitone))
+                                    {
+                                        continue;
+                                    }
+
+                                    if (hasSelectedOverlayPositionRange
+                                        && (fret < overlayPositionStartFret || fret > overlayPositionEndFret))
+                                    {
+                                        continue;
+                                    }
+
+                                    var cx = fret == 0 ? 10 : 20 + (fret - 0.5) * 24;
+                                    var isRoot = overlayRoot >= 0 && semitone == overlayRoot;
+                                    <circle cx="@cx" cy="@y" r="5.2" fill="@(isRoot ? "#ffd700" : "#ffffff")" opacity="@(isRoot ? "0.98" : "0.72")" />
+                                }
+                            }
+                        </svg>
+
+                        @if (TryGetSelectedScaleDegrees(out var overlayScaleDegrees))
+                        {
+                            <div class="spiral-overlay-position-row" role="group" aria-label="Fretboard scale positions">
+                                <button class="spiral-overlay-position-btn @(_selectedOverlayScaleDegree is null ? "active" : null)"
+                                        @onclick="() => SelectOverlayScalePosition(null)">
+                                    all
+                                </button>
+                                @foreach (var position in overlayScaleDegrees)
+                                {
+                                    var degree = position.Degree;
+                                    <button class="spiral-overlay-position-btn @(_selectedOverlayScaleDegree == degree ? "active" : null)"
+                                            @onclick="() => SelectOverlayScalePosition(degree)">
+                                        @RomanNumeral(position.Degree)
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="spiral-instrument-overlay-card">
+                        <h3>Piano keyboard</h3>
+                        <svg viewBox="0 0 330 108" class="spiral-mini-keys" role="img" aria-label="Selected notes on piano keyboard">
+                            <rect x="0" y="0" width="330" height="108" rx="8" fill="#1b1b2e" />
+
+                            @for (var i = 0; i < PianoWhiteSemitones.Length; i++)
+                            {
+                                var whiteSemitone = PianoWhiteSemitones[i];
+                                var x = 10 + i * 22;
+                                var isSelected = overlaySemitones.Contains(whiteSemitone);
+                                var fill = isSelected ? "#ffd700" : "#ffffff";
+                                <rect x="@x" y="12" width="22" height="86" fill="@fill" stroke="#171717" stroke-width="0.8" />
+                            }
+
+                            @for (var i = 0; i < PianoBlackKeys.Length; i++)
+                            {
+                                var blackKey = PianoBlackKeys[i];
+                                var isSelected = overlaySemitones.Contains(blackKey.Semitone);
+                                var fill = isSelected ? "#ffd700" : "#111111";
+                                <rect x="@blackKey.X" y="12" width="14" height="54" rx="2" fill="@fill" stroke="#050505" stroke-width="0.8" />
+                            }
+                        </svg>
+
+                        @if (TryGetSelectedScaleStepPattern(out var stepPattern))
+                        {
+                            <div class="spiral-step-pattern" aria-label="Scale whole and half step pattern">
+                                <span class="spiral-step-pattern-label">Steps</span>
+                                <div class="spiral-step-pattern-chips">
+                                    @foreach (var step in stepPattern)
+                                    {
+                                        <span class="spiral-step-chip">@step</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+
+        <aside class="spiral-note-pool-panel" aria-label="Selected note pool">
+            <h2>Stage 1 · Note pool</h2>
+
+        @if (_selectedNotes.Count == 0)
+        {
+            <p class="spiral-note-pool-empty">Click a note slice to add it to the pool.</p>
+        }
+        else
+        {
+            var noteProfiles = BuildNotePoolProfiles();
+            <ul class="spiral-note-pool-list">
+                @foreach (var noteProfile in noteProfiles)
+                {
+                    <li style="font-size:@noteProfile.FontSizeRem.I()rem; opacity:@noteProfile.VisualOpacity.I(); color:@noteProfile.AccentColor">
+                        <span>@noteProfile.Label</span>
+                        @if (_selectedNotes.Count > 1)
+                        {
+                            <small>@noteProfile.HarmonyToDissonanceRatio ratio</small>
+                        }
+                    </li>
+                }
+            </ul>
+
+            @if (_selectedNotes.Count == 1)
+            {
+                <p class="spiral-note-pool-next">Select one more note to analyze the diad relationship.</p>
+            }
+            else if (_selectedNotes.Count == 2)
+            {
+                var diad = BuildDiadAnalysis(_selectedNotes[0], _selectedNotes[1]);
+                <div class="spiral-diad-panel" aria-label="Diad relationship metrics">
+                    <h3>Diad</h3>
+
+                    <div class="spiral-diad-graph" aria-label="Proportional line graph">
+                        <div class="spiral-diad-graph-line">
+                            <span class="spiral-diad-graph-segment"
+                                  style="width:@diad.LeftLinePercent.I()%; background:@diad.LeftColor"
+                                  title="@diad.LeftLabel proportion"></span>
+                            <span class="spiral-diad-graph-segment"
+                                  style="width:@diad.RightLinePercent.I()%; background:@diad.RightColor"
+                                  title="@diad.RightLabel proportion"></span>
+                        </div>
+                        <div class="spiral-diad-graph-labels">
+                            <span style="color:@diad.LeftColor">@diad.LeftLabel @diad.LeftLinePercent.I()%</span>
+                            <span style="color:@diad.RightColor">@diad.RightLabel @diad.RightLinePercent.I()%</span>
+                        </div>
+                    </div>
+
+                    <dl>
+                        <div>
+                            <dt>Notes</dt>
+                            <dd>@diad.LeftLabel + @diad.RightLabel</dd>
+                        </div>
+                        <div>
+                            <dt>Interval distance</dt>
+                            <dd>@diad.IntervalSemitones semitones</dd>
+                        </div>
+                        <div>
+                            <dt>Circle distance</dt>
+                            <dd>@diad.FifthDistance steps</dd>
+                        </div>
+                        <div>
+                            <dt>Harmony / Dissonance</dt>
+                            <dd>@diad.HarmonyPercent / @diad.DissonancePercent</dd>
+                        </div>
+                        <div>
+                            <dt>Ratio</dt>
+                            <dd>@diad.HarmonyToDissonanceRatio</dd>
+                        </div>
+                        <div>
+                            <dt>Mood</dt>
+                            <dd><span class="spiral-diad-mood" style="--mood-color:@diad.MoodColor">@diad.MoodLabel</span></dd>
+                        </div>
+                    </dl>
+                </div>
+            }
+            else if (_selectedNotes.Count == 3)
+            {
+                var triad = BuildTriadAnalysis(_selectedNotes);
+                <div class="spiral-triad-panel" aria-label="Triad relationship metrics">
+                    <h3>Triad</h3>
+                    <dl>
+                        <div>
+                            <dt>Notes</dt>
+                            <dd>@triad.NotesLabel</dd>
+                        </div>
+                        <div>
+                            <dt>Pair harmony</dt>
+                            <dd>@triad.HarmonyPercent / @triad.DissonancePercent</dd>
+                        </div>
+                        <div>
+                            <dt>Ratios</dt>
+                            <dd>@triad.PairRatios</dd>
+                        </div>
+                        <div>
+                            <dt>Quality</dt>
+                            <dd><span class="spiral-diad-mood" style="--mood-color:@triad.QualityColor">@triad.QualityLabel</span></dd>
+                        </div>
+                    </dl>
+                </div>
+            }
+            else
+            {
+                <p class="spiral-note-pool-next">Each note is sized and colored by its harmony:dissonance relationship to the rest of the pool.</p>
+            }
+
+            <div class="spiral-scale-panel" aria-label="Scale ideas based on selected notes">
+                <h3>Scale ideas</h3>
+                @if (ScaleIdeas.Count == 0)
+                {
+                    <p class="spiral-note-pool-next">Select at least one note to see compatible scales.</p>
+                }
+                else
+                {
+                    <ul class="spiral-scale-list">
+                        @foreach (var scale in ScaleIdeas)
+                        {
+                            <li>
+                                <span>@scale.Label</span>
+                                <small>@scale.MatchSummary</small>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+
+            <div class="spiral-progression-panel" aria-label="Branching chord progression paths">
+                <h3>Progression paths</h3>
+                @if (CurrentExplorationChord is null)
+                {
+                    <p class="spiral-note-pool-next">Select at least 3 notes to infer a chord and see branching next moves.</p>
+                }
+                else
+                {
+                    <p class="spiral-progression-current">Current chord: <strong>@CurrentExplorationChord.DisplayName</strong></p>
+
+                    @if (ProgressionPaths.Count == 0)
+                    {
+                        <p class="spiral-note-pool-next">No nearby progression branches found yet.</p>
+                    }
+                    else
+                    {
+                        <div class="spiral-progression-paths">
+                            @foreach (var path in ProgressionPaths)
+                            {
+                                <section class="spiral-progression-branch">
+                                    <h4>@path.Title</h4>
+                                    <ul>
+                                        @foreach (var move in path.Moves)
+                                        {
+                                            <li>
+                                                <button class="spiral-progression-chip" @onclick="() => ApplyProgressionMoveAsync(move)">
+                                                    <span>@move.Chord.DisplayName</span>
+                                                    <small>@move.Relationship</small>
+                                                </button>
+                                            </li>
+                                        }
+                                    </ul>
+                                </section>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+
+            @if (SelectedSubdivisionIndices().Count < SubdivisionCount)
+            {
+                var nextMoves = BuildNextMoveRecommendations();
+                <div class="spiral-next-moves-panel" aria-label="Mood directed next moves">
+                    <h3>Next moves</h3>
+                    <p class="spiral-next-moves-target">Toward <strong>@MoodTargetLabel(SelectedMoodTarget)</strong></p>
+
+                    @if (nextMoves.Count == 0)
+                    {
+                        <p class="spiral-note-pool-next">Add at least one note to see recommendations.</p>
+                    }
+                    else
+                    {
+                        <ul class="spiral-next-moves-list">
+                            @foreach (var move in nextMoves)
+                            {
+                                <li>
+                                    <span>@move.NoteLabel</span>
+                                    <small>@move.ResultMoodLabel · @move.ProgressPercent</small>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+        }
+        </aside>
+    </div>
+
+    <section class="spiral-foundation-panel" aria-label="Current foundation concepts">
+        <h1>Fretless</h1>
+        <p>Fully zoomed out notes read as solid slices; zoom in to reveal their overtone layers.</p>
+    </section>
 </div>
 
 @code {
-    [Parameter] public EventCallback<NoteChord?> OnChordSelected { get; set; }
+    private const double SpiralA = 20.0;
+    private const double SpiralB = 46.0;
+    private const double FreqZ = SpiralB / (2.0 * Math.PI);
+    private const int SpiralTurns = 8;
+    private const double SurfaceBandThickness = 10.0;
+    private const double ZoomedArcThickness = 24.0;
+    private const double GapArcLength = 6.0;
+    private const double CenterHubRadius = SpiralA * 0.72;
+    private const double CenterGapWidth = GapArcLength;
+    private const double OvertoneLevelGap = GapArcLength;
+    private const double FullyZoomedOutZoom = 0.50;
+    private const double OvertoneLayerRevealEndZoom = 0.95;
+    private const double SurfaceTransitionStartZoom = 0.95;
+    private const double SurfaceTransitionEndZoom = 1.35;
+    private const int MinSubdivisionCount = 3;
+    private const int MaxSubdivisionCount = 48;
 
-    /// <summary>
-    /// Driven by the parent when an external source (e.g. ChordPairings) selects a chord.
-    /// Setting this highlights the chord's root note on the spiral.
-    /// </summary>
-    [Parameter] public NoteChord? HighlightChord { get; set; }
+    private static readonly string[] TwelveToneLabels =
+    [
+        "C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"
+    ];
 
-    private NoteChord? _prevHighlightChord;
+    private static readonly string[] AvailableKeys = TwelveToneLabels;
+    private static readonly string[] AvailableScaleNames =
+    [
+        "Chromatic",
+        "Major",
+        "Natural Minor",
+        "Major Pentatonic",
+        "Minor Pentatonic",
+        "Blues",
+        "Dorian",
+        "Mixolydian",
+        "Lydian",
+        "Phrygian",
+        "Harmonic Minor",
+        "Melodic Minor",
+        "Locrian"
+    ];
+    private static readonly MoodTarget[] AvailableMoodTargets = Enum.GetValues<MoodTarget>();
+    private static readonly int[] StandardGuitarOpenSemitones = [4, 9, 2, 7, 11, 4];
+    private static readonly int[] PianoWhiteSemitones = [0, 2, 4, 5, 7, 9, 11, 0, 2, 4, 5, 7, 9, 11];
+    private static readonly (double X, int Semitone)[] PianoBlackKeys =
+    [
+        (26, 1),
+        (48, 3),
+        (92, 6),
+        (114, 8),
+        (136, 10),
+        (180, 1),
+        (202, 3),
+        (246, 6),
+        (268, 8),
+        (290, 10),
+    ];
+    private const int OverlayFretCount = 12;
+    private const int OverlayPositionSpanFrets = 4;
 
-    private string? SelectedNote { get; set; }
-    private NoteChord? ActiveChord { get; set; }
-    private string? _focusedNote = null;
-    private bool _ratioMode = false;
+    private string _selectedKey = "";
+    private string _selectedScale = "";
+    private string SelectedKey
+    {
+        get => _selectedKey;
+        set
+        {
+            if (_selectedKey != value)
+            {
+                _selectedKey = value;
+                _selectedOverlayScaleDegree = null;
+                _targetGraphRotationDegrees = CalculateGraphRotationDegrees();
+                _ = AnimateGraphRotationAsync();
+            }
+        }
+    }
+
+    private string SelectedScale
+    {
+        get => _selectedScale;
+        set
+        {
+            if (_selectedScale != value)
+            {
+                _selectedScale = value;
+                _selectedOverlayScaleDegree = null;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private int? _selectedOverlayScaleDegree;
+
+    private HashSet<int>? GetSelectedScaleNotes()
+    {
+        if (string.IsNullOrEmpty(_selectedScale))
+        {
+            return null;
+        }
+
+        var keySemitone = string.IsNullOrEmpty(_selectedKey)
+            ? 0
+            : KeyLabelToChromaticSemitone(_selectedKey);
+        if (keySemitone < 0)
+        {
+            return null;
+        }
+
+        var scale = CommonScales.FirstOrDefault(s => s.Name == _selectedScale);
+        if (scale is null)
+        {
+            return null;
+        }
+
+        var scaleNotes = new HashSet<int>();
+        
+        foreach (var interval in scale.Intervals)
+        {
+            scaleNotes.Add((keySemitone + interval) % 12);
+        }
+
+        return scaleNotes;
+    }
+
+    private bool IsNoteOutsideSelectedScale(int subdivisionIndex)
+    {
+        if (string.IsNullOrEmpty(_selectedScale))
+        {
+            return false;
+        }
+
+        var scaleNotes = GetSelectedScaleNotes();
+        if (scaleNotes is null)
+        {
+            return false;
+        }
+
+        var noteSemitone = ToChromaticSemitone(subdivisionIndex);
+        return !scaleNotes.Contains(noteSemitone);
+    }
+
+    private bool TryBuildScaleDegreeLabels(out IReadOnlyList<ScaleDegreeLabel> labels)
+    {
+        labels = [];
+
+        if (string.IsNullOrWhiteSpace(_selectedKey) || string.IsNullOrWhiteSpace(_selectedScale))
+        {
+            return false;
+        }
+
+        var keySemitone = KeyLabelToChromaticSemitone(_selectedKey);
+        if (keySemitone < 0)
+        {
+            return false;
+        }
+
+        var scale = CommonScales.FirstOrDefault(s => s.Name == _selectedScale);
+        if (scale is null || scale.Intervals.Length == 0)
+        {
+            return false;
+        }
+
+        var outerRadius = SpiralA + SpiralTurns * SpiralB + SpiralB / 2.0;
+        var labelRadius = outerRadius + 16.0;
+        var slot = 2.0 * Math.PI / SubdivisionCount;
+        var degreeLabels = new List<ScaleDegreeLabel>(scale.Intervals.Length);
+
+        for (var i = 0; i < scale.Intervals.Length; i++)
+        {
+            var semitone = (keySemitone + scale.Intervals[i]) % 12;
+            var subdivisionIndex = ToSubdivisionFromSemitone(semitone);
+            var midAngle = (subdivisionIndex + 0.5) * slot;
+            var (x, y) = PolarPoint(midAngle, labelRadius);
+            degreeLabels.Add(new ScaleDegreeLabel(x, y, RomanNumeral(i + 1)));
+        }
+
+        labels = degreeLabels;
+        return true;
+    }
+
+    private static string RomanNumeral(int value) => value switch
+    {
+        1 => "i",
+        2 => "ii",
+        3 => "iii",
+        4 => "iv",
+        5 => "v",
+        6 => "vi",
+        7 => "vii",
+        8 => "viii",
+        9 => "ix",
+        10 => "x",
+        11 => "xi",
+        12 => "xii",
+        _ => value.ToString()
+    };
 
     private ElementReference _svgRef;
+    private double _zoom = FullyZoomedOutZoom;
+    private double _targetZoom = FullyZoomedOutZoom;
+    private bool _isAnimatingZoom;
+    private double _panX;
+    private double _panY;
+    private bool _isDragging;
+    private bool _dragMoved;
+    private double _dragStartX;
+    private double _dragStartY;
+    private double _panStartX;
+    private double _panStartY;
+    private bool _isPreviewing;
+    private double _graphRotationDegrees;
+    private double _targetGraphRotationDegrees;
+    private bool _isAnimatingGraphRotation;
 
-    // ── Zoom / pan ───────────────────────────────────────────────────────────
-    private double _zoom   = 1.0;
-    private double _panX   = 0.0;
-    private double _panY   = 0.0;
-    private const double MinZoom = 0.3;
-    private const double MaxZoom = 5.0;
+    private readonly List<SelectedNote> _selectedNotes = [];
+    private MoodTarget SelectedMoodTarget { get; set; } = MoodTarget.Balanced;
 
-    private bool   _isDragging = false;
-    private bool   _dragMoved  = false;
-    private double _dragStartX = 0, _dragStartY = 0;
-    private double _panStartX  = 0, _panStartY  = 0;
+    private int SubdivisionCount { get; set; } = 12;
+    private IReadOnlyList<ScaleRecommendation> ScaleIdeas => BuildScaleRecommendations();
+    private NoteChord? CurrentExplorationChord => BuildCurrentExplorationChord();
+    private IReadOnlyList<ProgressionPath> ProgressionPaths => BuildProgressionPaths();
+
+    private bool IsSurfaceView => _zoom < SurfaceTransitionStartZoom;
+    private bool IsZoomedView => _zoom > SurfaceTransitionEndZoom;
+    private int TotalSegments => SpiralTurns * SubdivisionCount;
+    private int LabelStride => Math.Max(1, SubdivisionCount / 12);
+
+    private double FirstRingInnerRadius => CenterHubRadius + CenterGapWidth;
 
     private string _viewBox =>
         $"{_panX - 210 / _zoom} {_panY - 210 / _zoom} {420 / _zoom} {420 / _zoom}";
 
-    private void ZoomIn()    { _zoom = Math.Min(_zoom * 1.25, MaxZoom); }
-    private void ZoomOut()   { _zoom = Math.Max(_zoom / 1.25, MinZoom); }
-    private void ResetZoom() { _zoom = 1.0; _panX = 0; _panY = 0; }
-    private void ToggleMode() { _ratioMode = !_ratioMode; }
+    private double SurfaceBlend => 1.0 - SmoothStep(
+        SurfaceTransitionStartZoom,
+        SurfaceTransitionEndZoom,
+        _zoom);
 
-    protected override void OnParametersSet()
+    private double OvertoneLayerSeparatorBlend => SmoothStep(
+        FullyZoomedOutZoom + 0.01,
+        OvertoneLayerRevealEndZoom,
+        _zoom);
+
+    protected override void OnInitialized()
     {
-        // Only react when the inbound HighlightChord actually changes.
-        if (HighlightChord == _prevHighlightChord) return;
-        _prevHighlightChord = HighlightChord;
+        var initialRotation = CalculateGraphRotationDegrees();
+        _graphRotationDegrees = initialRotation;
+        _targetGraphRotationDegrees = initialRotation;
+    }
 
-        if (HighlightChord is null)
+    private int KeySubdivisionIndex
+    {
+        get
         {
-            // Parent cleared the selection — leave the spiral as-is so the user
-            // can still see whatever they had selected.
+            if (string.IsNullOrWhiteSpace(_selectedKey) || SubdivisionCount <= 0)
+            {
+                return -1;
+            }
+
+            var keySemitone = KeyLabelToChromaticSemitone(_selectedKey);
+            if (keySemitone < 0)
+            {
+                return -1;
+            }
+
+            if (SubdivisionCount == 12)
+            {
+                return Array.IndexOf(TwelveToneLabels, _selectedKey);
+            }
+
+            return Enumerable.Range(0, SubdivisionCount)
+                .OrderBy(i => CircularDistance(ToChromaticSemitone(i), keySemitone, 12))
+                .ThenBy(i => i)
+                .First();
+        }
+    }
+
+    private double GraphRotationDegrees
+    {
+        get
+        {
+            if (SubdivisionCount <= 0)
+            {
+                return 0;
+            }
+
+            var keyIndex = KeySubdivisionIndex;
+            if (keyIndex < 0)
+            {
+                return 0;
+            }
+
+            var sliceAngleDegrees = 360.0 / SubdivisionCount;
+            return -(keyIndex + 0.5) * sliceAngleDegrees;
+        }
+    }
+
+    private void ZoomIn() => SetZoom(_zoom * 1.25);
+
+    private void ZoomOut() => SetZoom(_zoom / 1.25);
+
+    private void ResetZoom()
+    {
+        _zoom = FullyZoomedOutZoom;
+        _targetZoom = FullyZoomedOutZoom;
+        _panX = 0;
+        _panY = 0;
+    }
+
+    private void ShowSurface() => SetZoom(FullyZoomedOutZoom);
+
+    private void ShowZoomedIn() => SetZoom(1.65);
+
+    private async Task PreviewShapeShrinkAsync()
+    {
+        if (_isPreviewing)
+        {
             return;
         }
 
-        // Snap the spiral's selection to the highlighted chord's root note
-        // and set the focused note so connector lines are drawn correctly.
-        SelectedNote = HighlightChord.Root;
-        ActiveChord  = HighlightChord;
-        _focusedNote = HighlightChord.Root;
+        _isPreviewing = true;
+        try
+        {
+            await AnimateZoomAsync(FullyZoomedOutZoom, 1.65, 700);
+            await Task.Delay(450);
+            await AnimateZoomAsync(1.65, FullyZoomedOutZoom, 700);
+        }
+        finally
+        {
+            _isPreviewing = false;
+        }
+    }
+
+    private async Task AnimateZoomAsync(double from, double to, int durationMs)
+    {
+        const int frameMs = 16;
+        var frames = Math.Max(1, durationMs / frameMs);
+        for (var frame = 0; frame <= frames; frame++)
+        {
+            var progress = SmoothStep(0.0, 1.0, (double)frame / frames);
+            _zoom = Lerp(from, to, progress);
+            _panX = 0;
+            _panY = 0;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(frameMs);
+        }
+    }
+
+    private void IncreaseSubdivision()
+    {
+        SubdivisionCount = Math.Min(SubdivisionCount + 1, MaxSubdivisionCount);
+        SyncGraphRotationToCurrentState();
+    }
+
+    private void DecreaseSubdivision()
+    {
+        SubdivisionCount = Math.Max(SubdivisionCount - 1, MinSubdivisionCount);
+        SyncGraphRotationToCurrentState();
+    }
+
+    private void UpdateSubdivisionCountFromSelectedScale()
+    {
+        if (SubdivisionCount < MinSubdivisionCount || SubdivisionCount > MaxSubdivisionCount)
+        {
+            SubdivisionCount = Math.Clamp(SubdivisionCount, MinSubdivisionCount, MaxSubdivisionCount);
+            _selectedNotes.RemoveAll(n => n.SubdivisionIndex >= SubdivisionCount);
+            SyncGraphRotationToCurrentState();
+        }
+    }
+
+    private void SyncGraphRotationToCurrentState()
+    {
+        var rotation = CalculateGraphRotationDegrees();
+        _graphRotationDegrees = rotation;
+        _targetGraphRotationDegrees = rotation;
+    }
+
+    private double CalculateGraphRotationDegrees()
+    {
+        if (SubdivisionCount <= 0)
+        {
+            return 0;
+        }
+
+        var keyIndex = KeySubdivisionIndex;
+        if (keyIndex < 0)
+        {
+            return 0;
+        }
+
+        var sliceAngleDegrees = 360.0 / SubdivisionCount;
+        return -(keyIndex + 0.5) * sliceAngleDegrees;
+    }
+
+    private async Task AnimateGraphRotationAsync()
+    {
+        if (_isAnimatingGraphRotation)
+        {
+            return;
+        }
+
+        _isAnimatingGraphRotation = true;
+        const int frameMs = 16;
+        const int durationMs = 280;
+
+        try
+        {
+            while (true)
+            {
+                var start = _graphRotationDegrees;
+                var target = _targetGraphRotationDegrees;
+                var delta = ShortestAngularDelta(start, target);
+
+                if (Math.Abs(delta) < 0.05)
+                {
+                    _graphRotationDegrees = NormalizeDegrees(target);
+                    await InvokeAsync(StateHasChanged);
+                    break;
+                }
+
+                var destination = start + delta;
+                var frames = Math.Max(1, durationMs / frameMs);
+
+                for (var frame = 1; frame <= frames; frame++)
+                {
+                    var progress = SmoothStep(0.0, 1.0, (double)frame / frames);
+                    _graphRotationDegrees = Lerp(start, destination, progress);
+                    await InvokeAsync(StateHasChanged);
+                    await Task.Delay(frameMs);
+
+                    if (Math.Abs(ShortestAngularDelta(_graphRotationDegrees, _targetGraphRotationDegrees)) > 0.1
+                        && !AreAnglesNear(target, _targetGraphRotationDegrees))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        finally
+        {
+            _isAnimatingGraphRotation = false;
+        }
+    }
+
+    private static bool AreAnglesNear(double left, double right)
+    {
+        return Math.Abs(ShortestAngularDelta(left, right)) < 0.05;
+    }
+
+    private static double ShortestAngularDelta(double fromDegrees, double toDegrees)
+    {
+        return ((toDegrees - fromDegrees + 540.0) % 360.0) - 180.0;
+    }
+
+    private static double NormalizeDegrees(double degrees)
+    {
+        var normalized = degrees % 360.0;
+        if (normalized <= -180.0)
+        {
+            normalized += 360.0;
+        }
+        else if (normalized > 180.0)
+        {
+            normalized -= 360.0;
+        }
+
+        return normalized;
+    }
+
+    private void SetZoom(double zoom)
+    {
+        var oldZoom = _zoom;
+        _zoom = Math.Clamp(zoom, FullyZoomedOutZoom, 5.0);
+        _targetZoom = _zoom;
+        _panX = _panX * oldZoom / _zoom;
+        _panY = _panY * oldZoom / _zoom;
     }
 
     private void OnWheel(WheelEventArgs e)
     {
-        _zoom = Math.Clamp(_zoom * (e.DeltaY < 0 ? 1.1 : 0.9), MinZoom, MaxZoom);
+        _targetZoom = Math.Clamp(_targetZoom * (e.DeltaY < 0 ? 1.1 : 0.9), FullyZoomedOutZoom, 5.0);
+        if (!_isAnimatingZoom)
+        {
+            _ = RunWheelZoomAsync();
+        }
+    }
+
+    private async Task RunWheelZoomAsync()
+    {
+        _isAnimatingZoom = true;
+        const double smoothing = 0.30;
+        const double epsilon = 0.01;
+        const int frameMs = 24;
+
+        while (Math.Abs(_zoom - _targetZoom) > epsilon)
+        {
+            var nextZoom = Lerp(_zoom, _targetZoom, smoothing);
+            nextZoom = Math.Clamp(nextZoom, FullyZoomedOutZoom, 5.0);
+
+            if (Math.Abs(nextZoom - _zoom) < 0.0001)
+            {
+                break;
+            }
+
+            _panX = _panX * _zoom / nextZoom;
+            _panY = _panY * _zoom / nextZoom;
+            _zoom = nextZoom;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(frameMs);
+        }
+
+        // Snap to exact target to avoid float drift
+        _panX = _panX * _zoom / _targetZoom;
+        _panY = _panY * _zoom / _targetZoom;
+        _zoom = _targetZoom;
+        _isAnimatingZoom = false;
+        await InvokeAsync(StateHasChanged);
     }
 
     private void OnPointerDown(PointerEventArgs e)
     {
-        _isDragging = true; _dragMoved = false;
-        _dragStartX = e.ClientX; _dragStartY = e.ClientY;
-        _panStartX  = _panX;     _panStartY  = _panY;
+        _isDragging = true;
+        _dragMoved = false;
+        _dragStartX = e.ClientX;
+        _dragStartY = e.ClientY;
+        _panStartX = _panX;
+        _panStartY = _panY;
     }
 
     private void OnPointerMove(PointerEventArgs e)
     {
-        if (!_isDragging) return;
+        if (!_isDragging)
+        {
+            return;
+        }
+
         var dx = e.ClientX - _dragStartX;
         var dy = e.ClientY - _dragStartY;
-        if (Math.Abs(dx) > 3 || Math.Abs(dy) > 3) _dragMoved = true;
+        if (Math.Abs(dx) > 3 || Math.Abs(dy) > 3)
+        {
+            _dragMoved = true;
+        }
+
         var scale = (420.0 / _zoom) / 720.0;
         _panX = _panStartX - dx * scale;
         _panY = _panStartY - dy * scale;
     }
 
-    private void OnPointerUp(PointerEventArgs e) { _isDragging = false; }
+    private void OnPointerUp(PointerEventArgs e) => _isDragging = false;
 
-    // ── Spiral geometry ──────────────────────────────────────────────────────
-    private const double SpiralA      = 20.0;  // inner start radius
-    private const double SpiralB      = 46.0;  // radial gap between arms
-    private const double TurnsForNotes = 2.0;
-    private const int    TotalNotes   = 12;
-    private const double SegmentThickness = 10.0; // base stroke width in SVG units
-    private const double SegmentGapFrac   = 0.06; // fraction of each segment trimmed per end for gaps
-
-    private static (double X, double Y) SpiralPoint(double theta)
+    private bool ToggleNoteSelection(int subdivisionIndex, int? cycle)
     {
-        var r = SpiralA + SpiralB * (theta / (2.0 * Math.PI));
-        return (Math.Cos(theta - Math.PI / 2.0) * r,
-                Math.Sin(theta - Math.PI / 2.0) * r);
-    }
-
-    // A note-segment record with everything needed to render the arc.
-    private record NoteSegment(
-        int    CofIndex,
-        string ArcPath,
-        double MidX, double MidY,    // midpoint on the arc
-        double NormalX, double NormalY, // outward unit normal at midpoint
-        string RatioLabel             // shown in ratio mode
-    );
-
-    // Builds segment arc paths for the current mode.
-    // In Notes mode each segment spans an equal fraction of the total arc.
-    // In Ratio mode each segment's arc length is proportional to its
-    // just-intonation interval step size.
-    private IReadOnlyList<NoteSegment> BuildSegments()
-    {
-        const int   steps      = 60;   // polyline segments per note arc
-        const double totalTheta = TurnsForNotes * 2.0 * Math.PI;
-
-        // Build cumulative theta boundaries for each note.
-        double[] weights = _ratioMode
-            ? MusicTheoryService.CofRatioWeights()
-            : Enumerable.Repeat(1.0 / TotalNotes, TotalNotes).ToArray();
-
-        // Normalise weights to sum exactly to 1
-        var weightSum = weights.Sum();
-        var startTheta = new double[TotalNotes + 1];
-        startTheta[0] = 0;
-        for (int i = 0; i < TotalNotes; i++)
-            startTheta[i + 1] = startTheta[i] + (weights[i] / weightSum) * totalTheta;
-
-        // Ratio labels in CoF order (semitone of each CoF note)
-        var ratioLabels = MusicTheoryService.CircleOfFifths
-            .Select(n => MusicTheoryService.SemitoneRatios[MusicTheoryService.NoteIndex(n)].Label)
-            .ToArray();
-
-        var result = new List<NoteSegment>(TotalNotes);
-        for (int i = 0; i < TotalNotes; i++)
+        if (_dragMoved)
         {
-            var t0    = startTheta[i];
-            var t1    = startTheta[i + 1];
-            var span  = t1 - t0;
-            var gap   = span * SegmentGapFrac;
-            var tStart = t0 + gap;
-            var tEnd   = t1 - gap;
+            return false;
+        }
 
-            // Build polyline path
-            var sb = new System.Text.StringBuilder();
-            for (int s = 0; s <= steps; s++)
+        var selectedNote = new SelectedNote(subdivisionIndex, cycle);
+
+        if (cycle is null)
+        {
+            var removed = _selectedNotes.RemoveAll(n => n.SubdivisionIndex == subdivisionIndex) > 0;
+            if (removed)
             {
-                var theta = tStart + s * (tEnd - tStart) / steps;
-                var (x, y) = SpiralPoint(theta);
-                sb.Append(s == 0 ? $"M {x.I()} {y.I()}" : $" L {x.I()} {y.I()}");
+                return false;
             }
 
-            // Midpoint
-            var tMid        = (tStart + tEnd) / 2.0;
-            var (mx, my)    = SpiralPoint(tMid);
-
-            // Outward normal: derivative of spiral rotated 90 degrees outward
-            var dt          = 0.001;
-            var (ax, ay)    = SpiralPoint(tMid - dt);
-            var (bx, by)    = SpiralPoint(tMid + dt);
-            var tx          = bx - ax; var ty = by - ay;  // tangent
-            var len         = Math.Sqrt(tx * tx + ty * ty);
-            // Normal pointing outward (away from origin at that point)
-            var nx = -ty / len; var ny = tx / len;
-            // Ensure it points away from origin
-            if (nx * mx + ny * my < 0) { nx = -nx; ny = -ny; }
-
-            result.Add(new NoteSegment(i, sb.ToString(), mx, my, nx, ny, ratioLabels[i]));
+            _selectedNotes.Add(selectedNote);
+            return true;
         }
-        return result;
+
+        var existingIndex = _selectedNotes.FindIndex(n => n.SubdivisionIndex == subdivisionIndex && n.Cycle == cycle);
+        if (existingIndex >= 0)
+        {
+            _selectedNotes.RemoveAt(existingIndex);
+            return false;
+        }
+
+        _selectedNotes.RemoveAll(n => n.SubdivisionIndex == subdivisionIndex && n.Cycle is null);
+        _selectedNotes.Add(selectedNote);
+        return true;
     }
 
-    // ── Selection ────────────────────────────────────────────────────────────
-    private int _selectedCofIdx => SelectedNote is null
-        ? -1
-        : Array.IndexOf(MusicTheoryService.CircleOfFifths, SelectedNote);
-
-    private void SelectNote(string note)
+    private async Task HandleNoteClickAsync(int subdivisionIndex, int? cycle)
     {
-        if (_dragMoved) { _dragMoved = false; return; }
-        SelectedNote  = SelectedNote == note ? null : note;
-        ActiveChord   = null;
-        _focusedNote  = null;
-        OnChordSelected.InvokeAsync(null);
+        if (_dragMoved)
+        {
+            return;
+        }
+
+        var isOutsideSelectedScale = IsNoteOutsideSelectedScale(subdivisionIndex);
+        var alreadySelected = cycle is null
+            ? IsSubdivisionSelected(subdivisionIndex)
+            : IsSegmentSelected(subdivisionIndex, cycle.Value);
+
+        if (isOutsideSelectedScale && !alreadySelected)
+        {
+            return;
+        }
+
+        var wasAdded = ToggleNoteSelection(subdivisionIndex, cycle);
+
+        if (!wasAdded)
+        {
+            return;
+        }
+
+        var octave = cycle is int c
+            ? Math.Clamp(c, -1, 10)
+            : 2;
+        var note = BuildAudioNoteName(subdivisionIndex, octave);
+        await JS.InvokeVoidAsync("fretlessAudio.playOvertones", note, 20000);
     }
 
-    private void ClearSelection()
+    private string BuildAudioNoteName(int subdivisionIndex, int octave)
     {
-        SelectedNote  = null;
-        ActiveChord   = null;
-        _focusedNote  = null;
-        OnChordSelected.InvokeAsync(null);
+        var semitone = ToChromaticSemitone(subdivisionIndex);
+        var note = ChromaticSemitoneLabel(semitone);
+        return $"{note}{octave}";
     }
 
-    private async Task SelectChord(NoteChord chord)
+    private bool IsSubdivisionSelected(int subdivisionIndex)
     {
-        var toggling = ActiveChord?.DisplayName == chord.DisplayName;
-        ActiveChord  = toggling ? null : chord;
-        _focusedNote = toggling ? null : chord.Root;
-        await OnChordSelected.InvokeAsync(ActiveChord);
-        if (ActiveChord is not null) await PlayActiveChord();
+        return _selectedNotes.Any(n => n.SubdivisionIndex == subdivisionIndex);
     }
 
-    private async Task PlayActiveChord()
+    private bool IsSegmentSelected(int subdivisionIndex, int cycle)
     {
-        if (ActiveChord is null) return;
-        var notes = ActiveChord.AbsoluteNotes
+        return _selectedNotes.Any(n =>
+            n.SubdivisionIndex == subdivisionIndex
+            && (n.Cycle is null || n.Cycle == cycle));
+    }
+
+    private string SelectedNoteLabel(SelectedNote note)
+    {
+        return note.Cycle is int cycle
+            ? SubdivisionLabel(note.SubdivisionIndex, cycle)
+            : SubdivisionLabel(note.SubdivisionIndex);
+    }
+
+    private IReadOnlyList<int> SelectedSubdivisionIndices()
+    {
+        return _selectedNotes
+            .Select(n => n.SubdivisionIndex)
+            .Distinct()
+            .ToList();
+    }
+
+    private IReadOnlyList<NotePoolProfile> BuildNotePoolProfiles()
+    {
+        if (_selectedNotes.Count == 0)
+        {
+            return [];
+        }
+
+        if (_selectedNotes.Count == 1)
+        {
+            return
+            [
+                new NotePoolProfile(
+                    SelectedNoteLabel(_selectedNotes[0]),
+                    "1:1",
+                    1.0,
+                    1.0,
+                    "#ffffff")
+            ];
+        }
+
+        var harmonyScores = new List<double>(_selectedNotes.Count);
+
+        foreach (var note in _selectedNotes)
+        {
+            var otherNotes = _selectedNotes.Where(n => n != note).ToList();
+            var avgHarmony = otherNotes.Average(other => HarmonyScore(note.SubdivisionIndex, other.SubdivisionIndex));
+            harmonyScores.Add(Math.Clamp(avgHarmony, 0.01, 0.99));
+        }
+
+        var profiles = new List<NotePoolProfile>(_selectedNotes.Count);
+
+        for (var i = 0; i < _selectedNotes.Count; i++)
+        {
+            var harmony = harmonyScores[i];
+            var dissonance = 1.0 - harmony;
+            var ratio = BuildHarmonyDissonanceRatio(harmony, dissonance);
+            var fontSizeRem = 0.8 + harmony * 1.05;
+            var visualOpacity = 0.55 + harmony * 0.45;
+            var accentColor = HarmonyAccentColor(harmony);
+            profiles.Add(new NotePoolProfile(
+                SelectedNoteLabel(_selectedNotes[i]),
+                ratio,
+                fontSizeRem,
+                visualOpacity,
+                accentColor));
+        }
+
+        return profiles;
+    }
+
+    private static string HarmonyAccentColor(double harmony)
+    {
+        var clamped = Math.Clamp(harmony, 0.0, 1.0);
+        var contrastAdjusted = Math.Clamp(Math.Pow(clamped, 0.82), 0.0, 1.0);
+        return HeatmapColor(contrastAdjusted);
+    }
+
+    private static string HeatmapColor(double value)
+    {
+        var clamped = Math.Clamp(value, 0.0, 1.0);
+        var palette = new (double Stop, int R, int G, int B)[]
+        {
+            (0.00, 139, 0, 0),
+            (0.20, 212, 43, 26),
+            (0.40, 255, 140, 0),
+            (0.60, 255, 215, 0),
+            (0.80, 84, 196, 66),
+            (1.00, 15, 148, 56)
+        };
+
+        for (var i = 0; i < palette.Length - 1; i++)
+        {
+            var from = palette[i];
+            var to = palette[i + 1];
+            if (clamped <= to.Stop)
+            {
+                var t = (clamped - from.Stop) / (to.Stop - from.Stop);
+                var r = (int)Math.Round(Lerp(from.R, to.R, t));
+                var g = (int)Math.Round(Lerp(from.G, to.G, t));
+                var b = (int)Math.Round(Lerp(from.B, to.B, t));
+                return $"rgb({r},{g},{b})";
+            }
+        }
+
+        var final = palette[^1];
+        return $"rgb({final.R},{final.G},{final.B})";
+    }
+
+    private DiadAnalysis BuildDiadAnalysis(SelectedNote left, SelectedNote right)
+    {
+        var leftChromatic = ToChromaticIndex(left.SubdivisionIndex);
+        var rightChromatic = ToChromaticIndex(right.SubdivisionIndex);
+        var intervalSemitones = CircularDistance(leftChromatic, rightChromatic, 12);
+        var fifthDistance = CircularDistance(left.SubdivisionIndex, right.SubdivisionIndex, SubdivisionCount);
+        var harmony = HarmonyScore(left.SubdivisionIndex, right.SubdivisionIndex);
+        var dissonance = 1.0 - harmony;
+        var (leftLinePercent, rightLinePercent) = BuildDiadLinePercentages(intervalSemitones);
+        var harmonyPercent = $"{(harmony * 100.0).I()}%";
+        var dissonancePercent = $"{(dissonance * 100.0).I()}%";
+        var ratio = BuildHarmonyDissonanceRatio(harmony, dissonance);
+        var (moodLabel, moodColor) = DiadMoodFromRatio(harmony, dissonance);
+
+        return new DiadAnalysis(
+            SelectedNoteLabel(left),
+            SelectedNoteLabel(right),
+            intervalSemitones,
+            fifthDistance,
+            harmonyPercent,
+            dissonancePercent,
+            ratio,
+            leftLinePercent,
+            rightLinePercent,
+            NoteAccentColor(left.SubdivisionIndex),
+            NoteAccentColor(right.SubdivisionIndex),
+            moodLabel,
+            moodColor);
+    }
+
+    private static (string Label, string Color) DiadMoodFromRatio(double harmony, double dissonance)
+    {
+        var ratio = harmony / Math.Max(0.0001, dissonance);
+
+        if (ratio >= 3.5) return ("Resonant", "#66e38f");
+        if (ratio >= 2.0) return ("Warm", "#9be46a");
+        if (ratio >= 1.1) return ("Balanced", "#e7d66a");
+        if (ratio >= 0.75) return ("Tense", "#f2a45f");
+        return ("Dissonant", "#f06a6a");
+    }
+
+    private static (double LeftPercent, double RightPercent) BuildDiadLinePercentages(int intervalSemitones)
+    {
+        var safeInterval = Math.Clamp(intervalSemitones, 0, MusicTheoryService.SemitoneRatios.Length - 1);
+        var ratioLabel = MusicTheoryService.SemitoneRatios[safeInterval].Label;
+
+        var leftUnits = 1.0;
+        var rightUnits = 1.0;
+
+        if (ratioLabel.Contains('/'))
+        {
+            var parts = ratioLabel.Split('/');
+            if (parts.Length == 2
+                && double.TryParse(parts[0], out var numerator)
+                && double.TryParse(parts[1], out var denominator)
+                && numerator > 0
+                && denominator > 0)
+            {
+                leftUnits = denominator;
+                rightUnits = numerator;
+            }
+        }
+
+        var total = leftUnits + rightUnits;
+        if (total <= 0)
+        {
+            return (50, 50);
+        }
+
+        return (leftUnits / total * 100.0, rightUnits / total * 100.0);
+    }
+
+    private TriadAnalysis BuildTriadAnalysis(IReadOnlyList<SelectedNote> triadNotes)
+    {
+        var a = triadNotes[0].SubdivisionIndex;
+        var b = triadNotes[1].SubdivisionIndex;
+        var c = triadNotes[2].SubdivisionIndex;
+
+        var abHarmony = HarmonyScore(a, b);
+        var bcHarmony = HarmonyScore(b, c);
+        var caHarmony = HarmonyScore(c, a);
+        var avgHarmony = Math.Clamp((abHarmony + bcHarmony + caHarmony) / 3.0, 0.0, 1.0);
+        var avgDissonance = 1.0 - avgHarmony;
+
+        var pairRatios = string.Join(" · ",
+            BuildHarmonyDissonanceRatio(abHarmony, 1.0 - abHarmony),
+            BuildHarmonyDissonanceRatio(bcHarmony, 1.0 - bcHarmony),
+            BuildHarmonyDissonanceRatio(caHarmony, 1.0 - caHarmony));
+
+        var (qualityLabel, qualityColor) = TriadQualityFromNotes(a, b, c);
+
+        return new TriadAnalysis(
+            $"{SelectedNoteLabel(triadNotes[0])} + {SelectedNoteLabel(triadNotes[1])} + {SelectedNoteLabel(triadNotes[2])}",
+            $"{(avgHarmony * 100.0).I()}%",
+            $"{(avgDissonance * 100.0).I()}%",
+            pairRatios,
+            qualityLabel,
+            qualityColor);
+    }
+
+    private (string Label, string Color) TriadQualityFromNotes(int a, int b, int c)
+    {
+        var chromatic = new[]
+        {
+            ToChromaticIndex(a),
+            ToChromaticIndex(b),
+            ToChromaticIndex(c)
+        }
+        .Distinct()
+        .ToArray();
+
+        if (chromatic.Length != 3)
+        {
+            return ("Cluster", "#f06a6a");
+        }
+
+        foreach (var root in chromatic)
+        {
+            var intervals = chromatic
+                .Select(n => (n - root + 12) % 12)
+                .OrderBy(i => i)
+                .ToArray();
+
+            if (intervals.SequenceEqual([0, 4, 7])) return ("Major", "#78d86f");
+            if (intervals.SequenceEqual([0, 3, 7])) return ("Minor", "#95d06f");
+            if (intervals.SequenceEqual([0, 3, 6])) return ("Diminished", "#f2a45f");
+            if (intervals.SequenceEqual([0, 4, 8])) return ("Augmented", "#f58f6a");
+            if (intervals.SequenceEqual([0, 2, 7])) return ("Suspended 2", "#6ecfd9");
+            if (intervals.SequenceEqual([0, 5, 7])) return ("Suspended 4", "#7eb8e8");
+        }
+
+        return ("Complex", "#e7d66a");
+    }
+
+    private string NoteAccentColor(int subdivisionIndex)
+    {
+        var hue = 360.0 * (((subdivisionIndex % SubdivisionCount) + SubdivisionCount) % SubdivisionCount) / SubdivisionCount;
+        return $"hsl({hue.I()},78%,68%)";
+    }
+
+    private double HarmonyScore(int leftIndex, int rightIndex)
+    {
+        var leftChromatic = ToChromaticIndex(leftIndex);
+        var rightChromatic = ToChromaticIndex(rightIndex);
+        var semitoneDistance = CircularDistance(leftChromatic, rightChromatic, 12);
+        return semitoneDistance switch
+        {
+            0 => 0.95,
+            1 => 0.12,
+            2 => 0.36,
+            3 => 0.62,
+            4 => 0.8,
+            5 => 0.74,
+            6 => 0.2,
+            _ => 0.5
+        };
+    }
+
+    private static int KeyLabelToChromaticSemitone(string key) => key switch
+    {
+        "C" => 0,
+        "Db" => 1,
+        "D" => 2,
+        "Eb" => 3,
+        "E" => 4,
+        "F" => 5,
+        "F#" => 6,
+        "G" => 7,
+        "Ab" => 8,
+        "A" => 9,
+        "Bb" => 10,
+        "B" => 11,
+        _ => -1
+    };
+
+    private HashSet<int> GetInstrumentOverlaySemitones()
+    {
+        var scaleNotes = GetSelectedScaleNotes();
+        if (scaleNotes is not null && scaleNotes.Count > 0)
+        {
+            return scaleNotes;
+        }
+
+        if (_selectedNotes.Count == 0)
+        {
+            return [];
+        }
+
+        return _selectedNotes
+            .Select(n => ToChromaticSemitone(n.SubdivisionIndex))
+            .ToHashSet();
+    }
+
+    private int GetOverlayRootSemitone()
+    {
+        if (!string.IsNullOrWhiteSpace(_selectedKey))
+        {
+            return KeyLabelToChromaticSemitone(_selectedKey);
+        }
+
+        return _selectedNotes.Count > 0
+            ? ToChromaticSemitone(_selectedNotes[0].SubdivisionIndex)
+            : -1;
+    }
+
+    private bool TryGetSelectedScaleDegrees(out IReadOnlyList<OverlayScalePosition> degrees)
+    {
+        degrees = [];
+
+        if (string.IsNullOrWhiteSpace(_selectedKey) || string.IsNullOrWhiteSpace(_selectedScale))
+        {
+            return false;
+        }
+
+        var keySemitone = KeyLabelToChromaticSemitone(_selectedKey);
+        if (keySemitone < 0)
+        {
+            return false;
+        }
+
+        var scale = CommonScales.FirstOrDefault(s => s.Name == _selectedScale);
+        if (scale is null || scale.Intervals.Length == 0)
+        {
+            return false;
+        }
+
+        degrees = scale.Intervals
+            .Select((interval, index) =>
+            {
+                var semitone = (keySemitone + interval) % 12;
+                var anchorFret = FindFirstFretForSemitone(StandardGuitarOpenSemitones[0], semitone);
+                var maxStart = Math.Max(0, OverlayFretCount - OverlayPositionSpanFrets + 1);
+                var startFret = Math.Clamp(anchorFret, 0, maxStart);
+                var endFret = Math.Min(OverlayFretCount, startFret + OverlayPositionSpanFrets - 1);
+                return new OverlayScalePosition(index + 1, semitone, startFret, endFret);
+            })
+            .ToList();
+
+        return true;
+    }
+
+    private void SelectOverlayScalePosition(int? degree)
+    {
+        _selectedOverlayScaleDegree = degree;
+    }
+
+    private bool TryGetSelectedOverlayPositionRange(out int startFret, out int endFret)
+    {
+        startFret = 0;
+        endFret = OverlayFretCount;
+
+        if (_selectedOverlayScaleDegree is not int selectedDegree)
+        {
+            return false;
+        }
+
+        if (!TryGetSelectedScaleDegrees(out var positions))
+        {
+            return false;
+        }
+
+        var selected = positions.FirstOrDefault(p => p.Degree == selectedDegree);
+        if (selected is null)
+        {
+            return false;
+        }
+
+        startFret = selected.StartFret;
+        endFret = selected.EndFret;
+        return true;
+    }
+
+    private static int FindFirstFretForSemitone(int openStringSemitone, int targetSemitone)
+    {
+        var diff = (targetSemitone - openStringSemitone + 12) % 12;
+        return diff;
+    }
+
+    private bool TryGetSelectedScaleStepPattern(out IReadOnlyList<string> stepPattern)
+    {
+        stepPattern = [];
+
+        if (string.IsNullOrWhiteSpace(_selectedScale))
+        {
+            return false;
+        }
+
+        var scale = CommonScales.FirstOrDefault(s => s.Name == _selectedScale);
+        if (scale is null || scale.Intervals.Length == 0)
+        {
+            return false;
+        }
+
+        var intervals = scale.Intervals
+            .OrderBy(i => i)
+            .ToArray();
+
+        var steps = new List<string>(intervals.Length);
+        for (var i = 0; i < intervals.Length; i++)
+        {
+            var current = intervals[i];
+            var next = i == intervals.Length - 1 ? intervals[0] + 12 : intervals[i + 1];
+            var semitoneStep = next - current;
+            steps.Add(SemitoneStepLabel(semitoneStep));
+        }
+
+        stepPattern = steps;
+        return true;
+    }
+
+    private static string SemitoneStepLabel(int semitones) => semitones switch
+    {
+        1 => "h",
+        2 => "W",
+        3 => "W+h",
+        4 => "W+W",
+        _ => $"{semitones}h"
+    };
+
+    private sealed record OverlayScalePosition(int Degree, int Semitone, int StartFret, int EndFret);
+
+    private IReadOnlyList<NextMoveRecommendation> BuildNextMoveRecommendations()
+    {
+        if (_selectedNotes.Count == 0)
+        {
+            return [];
+        }
+
+        var selectedIndices = SelectedSubdivisionIndices();
+        var targetHarmony = MoodTargetHarmonyCenter(SelectedMoodTarget);
+        var currentHarmony = AggregateHarmony(selectedIndices);
+        var currentDistance = Math.Abs(currentHarmony - targetHarmony);
+        var recommendations = new List<NextMoveRecommendation>();
+
+        for (var candidate = 0; candidate < SubdivisionCount; candidate++)
+        {
+            if (selectedIndices.Contains(candidate))
+            {
+                continue;
+            }
+
+            var candidateSelection = selectedIndices.Append(candidate).ToArray();
+            var candidateHarmony = AggregateHarmony(candidateSelection);
+            var candidateDistance = Math.Abs(candidateHarmony - targetHarmony);
+            var progress = Math.Clamp(currentDistance - candidateDistance, -1.0, 1.0);
+            var fit = 1.0 - Math.Clamp(candidateDistance, 0.0, 1.0);
+            var score = fit * 0.7 + Math.Max(0.0, progress) * 0.3;
+
+            recommendations.Add(new NextMoveRecommendation(
+                candidate,
+                SubdivisionLabel(candidate),
+                MoodLabelFromHarmony(candidateHarmony),
+                $"{(progress * 100.0).I()}%",
+                score));
+        }
+
+        return recommendations
+            .OrderByDescending(r => r.Score)
+            .ThenByDescending(r => r.NoteLabel)
+            .Take(3)
+            .ToList();
+    }
+
+    private IReadOnlyList<ScaleRecommendation> BuildScaleRecommendations()
+    {
+        if (_selectedNotes.Count == 0)
+        {
+            return [];
+        }
+
+        var selectedSemitones = _selectedNotes
+            .Select(n => ToChromaticSemitone(n.SubdivisionIndex))
+            .Distinct()
+            .ToHashSet();
+
+        var selectedKeySemitone = KeySubdivisionIndex >= 0
+            ? ToChromaticSemitone(KeySubdivisionIndex)
+            : -1;
+
+        var candidates = new List<ScaleRecommendation>();
+
+        foreach (var root in Enumerable.Range(0, 12))
+        {
+            foreach (var scale in CommonScales)
+            {
+                var scaleSemitones = scale.Intervals
+                    .Select(interval => (root + interval) % 12)
+                    .ToHashSet();
+
+                if (!selectedSemitones.IsSubsetOf(scaleSemitones))
+                {
+                    continue;
+                }
+
+                var missingCount = scaleSemitones.Count - selectedSemitones.Count;
+                var rootBias = selectedKeySemitone == root ? 0 : 1;
+                var score = missingCount * 10 + rootBias;
+
+                var missingNotes = scaleSemitones
+                    .Except(selectedSemitones)
+                    .OrderBy(n => n)
+                    .Select(ChromaticSemitoneLabel)
+                    .ToArray();
+
+                var summary = missingNotes.Length == 0
+                    ? "Complete match"
+                    : $"Missing {string.Join(", ", missingNotes)}";
+
+                candidates.Add(new ScaleRecommendation(
+                    $"{ChromaticSemitoneLabel(root)} {scale.Name}",
+                    summary,
+                    score));
+            }
+        }
+
+        return candidates
+            .OrderBy(c => c.Score)
+            .ThenBy(c => c.Label)
+            .Take(4)
+            .ToList();
+    }
+
+    private NoteChord? BuildCurrentExplorationChord()
+    {
+        var selectedSemitones = _selectedNotes
+            .Select(n => ToChromaticSemitone(n.SubdivisionIndex))
+            .Distinct()
+            .ToHashSet();
+
+        if (selectedSemitones.Count < 3)
+        {
+            return null;
+        }
+
+        var triadTypes = MusicTheoryService.ChordTypes
+            .Where(t => t.Intervals.Length == 3)
+            .ToArray();
+
+        foreach (var root in Enumerable.Range(0, 12))
+        {
+            foreach (var triadType in triadTypes)
+            {
+                var chordNotes = triadType.Intervals
+                    .Select(interval => (root + interval) % 12)
+                    .ToHashSet();
+
+                if (!chordNotes.IsSubsetOf(selectedSemitones))
+                {
+                    continue;
+                }
+
+                return new NoteChord(ChromaticSemitoneLabel(root), triadType);
+            }
+        }
+
+        return null;
+    }
+
+    private IReadOnlyList<ProgressionPath> BuildProgressionPaths()
+    {
+        var current = CurrentExplorationChord;
+        if (current is null)
+        {
+            return [];
+        }
+
+        var pairings = MusicTheoryService.GetPairedChords(current)
+            .Select(pairing => new ProgressionMove(
+                pairing.Chord,
+                pairing.Relationship,
+                MusicTheoryService.CofDistance(NormalizeToCofNote(current.Root), NormalizeToCofNote(pairing.Chord.Root)),
+                pairing.Strength))
+            .ToList();
+
+        var safeMoves = pairings
+            .Where(p => p.Strength == PairingStrength.Resolved && p.CofDistance <= 2)
+            .OrderBy(p => p.CofDistance)
+            .ThenBy(p => p.Chord.DisplayName)
+            .Take(3)
+            .ToList();
+
+        var colorMoves = pairings
+            .Where(p => p.Strength == PairingStrength.Suspended && p.CofDistance <= 2)
+            .OrderBy(p => p.CofDistance)
+            .ThenBy(p => p.Chord.DisplayName)
+            .Take(3)
+            .ToList();
+
+        var adventurousMoves = pairings
+            .Where(p => p.CofDistance >= 3)
+            .OrderByDescending(p => p.CofDistance)
+            .ThenBy(p => p.Chord.DisplayName)
+            .Take(3)
+            .ToList();
+
+        var paths = new List<ProgressionPath>();
+
+        if (safeMoves.Count > 0)
+        {
+            paths.Add(new ProgressionPath("Safe resolution", safeMoves));
+        }
+
+        if (colorMoves.Count > 0)
+        {
+            paths.Add(new ProgressionPath("Color and tension", colorMoves));
+        }
+
+        if (adventurousMoves.Count > 0)
+        {
+            paths.Add(new ProgressionPath("Adventure branch", adventurousMoves));
+        }
+
+        return paths;
+    }
+
+    private async Task ApplyProgressionMoveAsync(ProgressionMove move)
+    {
+        _selectedNotes.Clear();
+        foreach (var semitone in move.Chord.AbsoluteNotes.Distinct())
+        {
+            _selectedNotes.Add(new SelectedNote(ToSubdivisionFromSemitone(semitone), null));
+        }
+
+        var notes = move.Chord.AbsoluteNotes
             .Select(n => $"{MusicTheoryService.NoteAtIndex(n)}4")
             .ToArray();
         await JS.InvokeVoidAsync("fretlessAudio.playChord", (object)notes);
     }
 
-    private static MarkupString SvgText(double x, double y, string fontSize, string style, string? content) =>
-        new($"<text x=\"{x.I()}\" y=\"{y.I()}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"{fontSize}\" style=\"{style}\">{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(content ?? string.Empty)}</text>");
+    private int ToSubdivisionFromSemitone(int semitone)
+    {
+        if (SubdivisionCount == 12)
+        {
+            for (var index = 0; index < 12; index++)
+            {
+                if (ToChromaticSemitone(index) == semitone)
+                {
+                    return index;
+                }
+            }
+
+            return 0;
+        }
+
+        var nearest = Enumerable.Range(0, SubdivisionCount)
+            .OrderBy(i => CircularDistance(ToChromaticSemitone(i), semitone, 12))
+            .First();
+
+        return nearest;
+    }
+
+    private static string NormalizeToCofNote(string note) => note switch
+    {
+        "C#" => "Db",
+        "D#" => "Eb",
+        "G#" => "Ab",
+        "A#" => "Bb",
+        _ => note
+    };
+
+    private double AggregateHarmony(IReadOnlyList<int> notes)
+    {
+        if (notes.Count <= 1)
+        {
+            return 0.5;
+        }
+
+        var total = 0.0;
+        var pairs = 0;
+
+        for (var i = 0; i < notes.Count; i++)
+        {
+            for (var j = i + 1; j < notes.Count; j++)
+            {
+                total += HarmonyScore(notes[i], notes[j]);
+                pairs++;
+            }
+        }
+
+        return pairs == 0 ? 0.5 : total / pairs;
+    }
+
+    private static string MoodLabelFromHarmony(double harmony)
+    {
+        var dissonance = 1.0 - harmony;
+        return DiadMoodFromRatio(harmony, dissonance).Label;
+    }
+
+    private static double MoodTargetHarmonyCenter(MoodTarget target) => target switch
+    {
+        MoodTarget.Resonant => 0.88,
+        MoodTarget.Warm => 0.74,
+        MoodTarget.Balanced => 0.56,
+        MoodTarget.Tense => 0.38,
+        MoodTarget.Dissonant => 0.2,
+        _ => 0.56
+    };
+
+    private static string MoodTargetLabel(MoodTarget target) => target switch
+    {
+        MoodTarget.Resonant => "Resonant",
+        MoodTarget.Warm => "Warm",
+        MoodTarget.Balanced => "Balanced",
+        MoodTarget.Tense => "Tense",
+        MoodTarget.Dissonant => "Dissonant",
+        _ => "Balanced"
+    };
+
+    private int ToChromaticIndex(int subdivisionIndex)
+    {
+        if (SubdivisionCount == 12)
+        {
+            return ((subdivisionIndex % 12) + 12) % 12;
+        }
+
+        var mapped = (int)Math.Round(subdivisionIndex * 12.0 / SubdivisionCount);
+        return ((mapped % 12) + 12) % 12;
+    }
+
+    private int ToChromaticSemitone(int subdivisionIndex)
+    {
+        if (SubdivisionCount != 12)
+        {
+            return ToChromaticIndex(subdivisionIndex);
+        }
+
+        var note = TwelveToneLabels[((subdivisionIndex % 12) + 12) % 12];
+        return note switch
+        {
+            "C" => 0,
+            "Db" => 1,
+            "D" => 2,
+            "Eb" => 3,
+            "E" => 4,
+            "F" => 5,
+            "F#" => 6,
+            "G" => 7,
+            "Ab" => 8,
+            "A" => 9,
+            "Bb" => 10,
+            "B" => 11,
+            _ => 0
+        };
+    }
+
+    private static string ChromaticSemitoneLabel(int semitone)
+    {
+        var normalized = ((semitone % 12) + 12) % 12;
+        return normalized switch
+        {
+            0 => "C",
+            1 => "Db",
+            2 => "D",
+            3 => "Eb",
+            4 => "E",
+            5 => "F",
+            6 => "F#",
+            7 => "G",
+            8 => "Ab",
+            9 => "A",
+            10 => "Bb",
+            11 => "B",
+            _ => "C"
+        };
+    }
+
+    private static int CircularDistance(int leftIndex, int rightIndex, int divisions)
+    {
+        var safeDivisions = Math.Max(1, divisions);
+        var left = ((leftIndex % safeDivisions) + safeDivisions) % safeDivisions;
+        var right = ((rightIndex % safeDivisions) + safeDivisions) % safeDivisions;
+        var diff = Math.Abs(left - right);
+        return Math.Min(diff, safeDivisions - diff);
+    }
+
+    private static string BuildHarmonyDissonanceRatio(double harmony, double dissonance)
+    {
+        var harmonyUnits = (int)Math.Round(harmony * 100.0);
+        var dissonanceUnits = (int)Math.Round(dissonance * 100.0);
+
+        if (dissonanceUnits == 0)
+        {
+            return $"{harmonyUnits}:0";
+        }
+
+        var gcd = GreatestCommonDivisor(harmonyUnits, dissonanceUnits);
+        return $"{harmonyUnits / gcd}:{dissonanceUnits / gcd}";
+    }
+
+    private static int GreatestCommonDivisor(int a, int b)
+    {
+        while (b != 0)
+        {
+            (a, b) = (b, a % b);
+        }
+
+        return Math.Max(1, a);
+    }
+
+    private IReadOnlyList<SpiralSegment> BuildSegments(double collapseProgress, double layerSeparatorBlend)
+    {
+        var result = new List<SpiralSegment>(TotalSegments);
+        var slot = 2.0 * Math.PI / SubdivisionCount;
+        var halfGap = GapArcLength / 2.0;
+        var minSpiralGap = 1.0 / _zoom;
+        var levelGap = Lerp(minSpiralGap, OvertoneLevelGap, layerSeparatorBlend);
+        var ringBandThickness = SpiralB - levelGap;
+        var baseInnerRadius = FirstRingInnerRadius;
+        var segmentIndex = 0;
+
+        for (var cycle = 0; cycle < SpiralTurns; cycle++)
+        {
+            var innerRadius = baseInnerRadius + cycle * SpiralB;
+            var outerRadius = innerRadius + ringBandThickness;
+
+            for (var subdivisionIndex = 0; subdivisionIndex < SubdivisionCount; subdivisionIndex++)
+            {
+                var startDivider = subdivisionIndex * slot;
+                var endDivider = (subdivisionIndex + 1) * slot;
+                var midAngle = (startDivider + endDivider) / 2.0;
+                var labelRadius = (innerRadius + outerRadius) / 2.0;
+                var (midX, midY) = PolarPoint(midAngle, labelRadius);
+                var label = SubdivisionLabel(subdivisionIndex, cycle);
+                var color = SubdivisionColor(subdivisionIndex);
+                var wedgePath = AnnularWedgePath(startDivider, endDivider, innerRadius, outerRadius, halfGap);
+
+                result.Add(new SpiralSegment(
+                    subdivisionIndex,
+                    cycle,
+                    segmentIndex++,
+                    label,
+                    color,
+                    wedgePath,
+                    wedgePath,
+                    midX,
+                    midY));
+            }
+        }
+
+        return result;
+    }
+
+    private string SubdivisionLabel(int subdivisionIndex, int? cycle = null)
+    {
+        var root = SubdivisionCount == 12
+            ? TwelveToneLabels[((subdivisionIndex % 12) + 12) % 12]
+            : $"S{subdivisionIndex + 1}";
+
+        return cycle is null ? root : $"{root}{cycle.Value + 1}";
+    }
+
+    private string SubdivisionRootLabel(int subdivisionIndex, int? cycle = null)
+    {
+        var root = SubdivisionCount == 12
+            ? TwelveToneLabels[((subdivisionIndex % 12) + 12) % 12]
+            : $"S{subdivisionIndex + 1}";
+
+        return cycle is null ? root : $"{root}{cycle.Value + 1}";
+    }
+
+    private string SubdivisionColor(int subdivisionIndex)
+    {
+        var scaleNotes = GetSelectedScaleNotes();
+
+        // Scale mode: no heatmap colors on scale buttons/slices.
+        if (!string.IsNullOrEmpty(_selectedScale) && scaleNotes != null)
+        {
+            var noteSemitone = ToChromaticSemitone(subdivisionIndex);
+            if (scaleNotes.Contains(noteSemitone))
+            {
+                return "#ffffff";
+            }
+
+            return "#4a4a4a";
+        }
+
+        // If only key is selected (no scale), use heatmap coloring
+        var keyIdx = KeySubdivisionIndex;
+        if (keyIdx >= 0 && !string.IsNullOrEmpty(_selectedKey))
+        {
+            var keyHarmony = HarmonyScore(keyIdx, subdivisionIndex);
+            return HarmonyAccentColor(keyHarmony);
+        }
+
+        // No key or scale selected - default behavior based on selected notes
+        if (_selectedNotes.Count == 0)
+        {
+            return "#ffffff";
+        }
+
+        if (_selectedNotes.Count == 2)
+        {
+            var thirdOptionHarmony = ThirdOptionHarmonyScore(subdivisionIndex, _selectedNotes[0].SubdivisionIndex, _selectedNotes[1].SubdivisionIndex);
+            return HarmonyAccentColor(thirdOptionHarmony);
+        }
+
+        var anchorNote = _selectedNotes[0].SubdivisionIndex;
+        var anchorHarmony = HarmonyScore(anchorNote, subdivisionIndex);
+        return HarmonyAccentColor(anchorHarmony);
+    }
+
+    private double ThirdOptionHarmonyScore(int candidate, int left, int right)
+    {
+        var leftHarmony = HarmonyScore(left, candidate);
+        var rightHarmony = HarmonyScore(right, candidate);
+        var balancedHarmony = Math.Min(leftHarmony, rightHarmony);
+        var averageHarmony = (leftHarmony + rightHarmony) / 2.0;
+        return Math.Clamp(balancedHarmony * 0.65 + averageHarmony * 0.35, 0.0, 1.0);
+    }
+
+    private IEnumerable<SolidSurfaceSlice> BuildSolidSurfaceSlices()
+    {
+        var outerRadius = SpiralA + SpiralTurns * SpiralB + SpiralB / 2.0;
+        var innerRadius = FirstRingInnerRadius;
+        var slot = 2.0 * Math.PI / SubdivisionCount;
+        var halfGap = GapArcLength / 2.0;
+
+        for (var subdivisionIndex = 0; subdivisionIndex < SubdivisionCount; subdivisionIndex++)
+        {
+            yield return new SolidSurfaceSlice(
+                subdivisionIndex,
+                SubdivisionColor(subdivisionIndex),
+                AnnularWedgePath(subdivisionIndex * slot, (subdivisionIndex + 1) * slot, innerRadius, outerRadius, halfGap));
+        }
+    }
+
+    private IEnumerable<string> BuildSurfaceSliceDividers()
+    {
+        var outerRadius = SpiralA + SpiralTurns * SpiralB + SpiralB / 2.0;
+        var slot = 2.0 * Math.PI / SubdivisionCount;
+
+        for (var subdivisionIndex = 0; subdivisionIndex < SubdivisionCount; subdivisionIndex++)
+        {
+            yield return RadialLinePath(subdivisionIndex * slot, 0.0, outerRadius);
+        }
+    }
+
+    private static string AnnularWedgePath(double startDivider, double endDivider, double innerRadius, double outerRadius, double halfGap = 0.0)
+    {
+        // asin(halfGap / r) gives the angular inset at radius r whose perpendicular
+        // distance from the divider equals halfGap — must be computed per-radius so the
+        // gap width is constant rather than tapering with r.
+        var outerInset = outerRadius > 0 ? Math.Asin(Math.Clamp(halfGap / outerRadius, -1.0, 1.0)) : 0.0;
+        var innerInset = innerRadius > 0 ? Math.Asin(Math.Clamp(halfGap / innerRadius, -1.0, 1.0)) : 0.0;
+
+        var startOuter = startDivider + outerInset;
+        var endOuter   = endDivider   - outerInset;
+        var startInner = startDivider + innerInset;
+        var endInner   = endDivider   - innerInset;
+
+        var (outerStartX, outerStartY) = PolarPoint(startOuter, outerRadius);
+        var (outerEndX,   outerEndY)   = PolarPoint(endOuter,   outerRadius);
+        var largeArc = endOuter - startOuter > Math.PI ? 1 : 0;
+
+        if (innerRadius <= 0)
+        {
+            return $"M {outerStartX.I()} {outerStartY.I()} A {outerRadius.I()} {outerRadius.I()} 0 {largeArc} 1 {outerEndX.I()} {outerEndY.I()} L 0 0 Z";
+        }
+
+        var (innerEndX,   innerEndY)   = PolarPoint(endInner,   innerRadius);
+        var (innerStartX, innerStartY) = PolarPoint(startInner, innerRadius);
+
+        return $"M {outerStartX.I()} {outerStartY.I()} A {outerRadius.I()} {outerRadius.I()} 0 {largeArc} 1 {outerEndX.I()} {outerEndY.I()} L {innerEndX.I()} {innerEndY.I()} A {innerRadius.I()} {innerRadius.I()} 0 {largeArc} 0 {innerStartX.I()} {innerStartY.I()} Z";
+    }
+
+    private static string RadialLinePath(double theta, double innerRadius, double outerRadius)
+    {
+        var (innerX, innerY) = PolarPoint(theta, innerRadius);
+        var (outerX, outerY) = PolarPoint(theta, outerRadius);
+
+        return $"M {innerX.I()} {innerY.I()} L {outerX.I()} {outerY.I()}";
+    }
+
+    private IEnumerable<SurfaceLabel> BuildSurfaceLabels(IReadOnlyList<SpiralSegment> segments)
+    {
+        var outerRadius = SpiralA + SpiralTurns * SpiralB + SpiralB / 2.0;
+        // Sector centroid ≈ 2R·sin(α)/(3α) where α = half-angle; for 12 equal slices this ≈ 0.66R.
+        var labelRadius = outerRadius * 0.62;
+        var slot = 2.0 * Math.PI / SubdivisionCount;
+
+        for (var subdivisionIndex = 0; subdivisionIndex < SubdivisionCount; subdivisionIndex++)
+        {
+            var midAngle = (subdivisionIndex + 0.5) * slot;
+            var (x, y) = PolarPoint(midAngle, labelRadius);
+            yield return new SurfaceLabel(subdivisionIndex, x, y, SubdivisionLabel(subdivisionIndex));
+        }
+    }
+
+    private (double X, double Y) SpiralPoint(double theta, double radialOffset = 0.0)
+    {
+        var (hx, hy, hz) = HelixPoint3D(theta, radialOffset);
+        return Project(hx, hy, hz);
+    }
+
+    private static (double X, double Y, double Z) HelixPoint3D(double theta, double radialOffset = 0.0)
+    {
+        var radius = SpiralA + SpiralB * (theta / (2.0 * Math.PI)) + radialOffset;
+        return (Math.Sin(theta) * radius, -Math.Cos(theta) * radius, FreqZ * theta);
+    }
+
+    private static (double Tx, double Ty, double Tz) HelixTangent3D(double theta, double radialOffset = 0.0)
+    {
+        var radius = SpiralA + SpiralB * (theta / (2.0 * Math.PI)) + radialOffset;
+        var dr = SpiralB / (2.0 * Math.PI);
+        var tx = Math.Cos(theta) * radius + Math.Sin(theta) * dr;
+        var ty = Math.Sin(theta) * radius - Math.Cos(theta) * dr;
+        var tz = FreqZ;
+        var length = Math.Sqrt(tx * tx + ty * ty + tz * tz);
+        return (tx / length, ty / length, tz / length);
+    }
+
+    private static (double X, double Y) Project(double helixX, double helixY, double helixZ) => (helixX, helixY);
+
+    private string BezierArcPath(double tStart, double tEnd, double radialOffset = 0.0)
+    {
+        var (p0x, p0y) = SpiralPoint(tStart, radialOffset);
+        var (p3x, p3y) = SpiralPoint(tEnd, radialOffset);
+        var chord = Math.Sqrt((p3x - p0x) * (p3x - p0x) + (p3y - p0y) * (p3y - p0y));
+        var k = chord / 3.0;
+
+        var (t0hx, t0hy, t0hz) = HelixTangent3D(tStart, radialOffset);
+        var (t1hx, t1hy, t1hz) = HelixTangent3D(tEnd, radialOffset);
+        var (t0sx, t0sy) = Project(t0hx, t0hy, t0hz);
+        var (t1sx, t1sy) = Project(t1hx, t1hy, t1hz);
+        Normalise(ref t0sx, ref t0sy);
+        Normalise(ref t1sx, ref t1sy);
+
+        var c1x = p0x + k * t0sx;
+        var c1y = p0y + k * t0sy;
+        var c2x = p3x - k * t1sx;
+        var c2y = p3y - k * t1sy;
+
+        return $"M {p0x.I()} {p0y.I()} C {c1x.I()} {c1y.I()} {c2x.I()} {c2y.I()} {p3x.I()} {p3y.I()}";
+    }
+
+    private string InsetRoundedCellPath(double t0, double t1, double halfBand, double cornerRoundness)
+    {
+        var left = Math.Min(t0, t1);
+        var right = Math.Max(t0, t1);
+        var top = halfBand;
+        var bottom = -halfBand;
+        var width = right - left;
+        var roundness = Math.Clamp(cornerRoundness, 0.0, 1.0);
+        var thetaRadius = Math.Min(width * 0.42, 2.0 * Math.PI / SubdivisionCount * 0.18) * roundness;
+        var offsetRadius = Math.Min(halfBand * 0.35, thetaRadius) * roundness;
+        var edgeSteps = Math.Max(5, (int)Math.Ceiling(width / (2.0 * Math.PI) * SubdivisionCount * 3.0));
+        const int cornerSteps = 5;
+        var points = new List<(double X, double Y)>(edgeSteps * 2 + cornerSteps * 4 + 8);
+
+        AddThetaEdge(points, left + thetaRadius, right - thetaRadius, top, edgeSteps);
+        AddTopRightCorner(points, right, top, thetaRadius, offsetRadius, cornerSteps);
+        AddOffsetEdge(points, right, top - offsetRadius, bottom + offsetRadius, cornerSteps);
+        AddBottomRightCorner(points, right, bottom, thetaRadius, offsetRadius, cornerSteps);
+        AddThetaEdge(points, right - thetaRadius, left + thetaRadius, bottom, edgeSteps);
+        AddBottomLeftCorner(points, left, bottom, thetaRadius, offsetRadius, cornerSteps);
+        AddOffsetEdge(points, left, bottom + offsetRadius, top - offsetRadius, cornerSteps);
+        AddTopLeftCorner(points, left, top, thetaRadius, offsetRadius, cornerSteps);
+
+        return PolygonPath(points);
+    }
+
+    private void AddThetaEdge(List<(double X, double Y)> points, double fromTheta, double toTheta, double offset, int steps)
+    {
+        for (var step = 0; step <= steps; step++)
+        {
+            var theta = Lerp(fromTheta, toTheta, (double)step / steps);
+            points.Add(OffsetPoint(theta, offset));
+        }
+    }
+
+    private void AddOffsetEdge(List<(double X, double Y)> points, double theta, double fromOffset, double toOffset, int steps)
+    {
+        for (var step = 1; step <= steps; step++)
+        {
+            var offset = Lerp(fromOffset, toOffset, (double)step / steps);
+            points.Add(OffsetPoint(theta, offset));
+        }
+    }
+
+    private void AddTopRightCorner(List<(double X, double Y)> points, double right, double top, double thetaRadius, double offsetRadius, int steps)
+    {
+        for (var step = 1; step <= steps; step++)
+        {
+            var angle = Math.PI * 0.5 * step / steps;
+            points.Add(OffsetPoint(
+                right - thetaRadius + thetaRadius * Math.Sin(angle),
+                top - offsetRadius + offsetRadius * Math.Cos(angle)));
+        }
+    }
+
+    private void AddBottomRightCorner(List<(double X, double Y)> points, double right, double bottom, double thetaRadius, double offsetRadius, int steps)
+    {
+        for (var step = 1; step <= steps; step++)
+        {
+            var angle = Math.PI * 0.5 * step / steps;
+            points.Add(OffsetPoint(
+                right - thetaRadius + thetaRadius * Math.Cos(angle),
+                bottom + offsetRadius - offsetRadius * Math.Sin(angle)));
+        }
+    }
+
+    private void AddBottomLeftCorner(List<(double X, double Y)> points, double left, double bottom, double thetaRadius, double offsetRadius, int steps)
+    {
+        for (var step = 1; step <= steps; step++)
+        {
+            var angle = Math.PI * 0.5 * step / steps;
+            points.Add(OffsetPoint(
+                left + thetaRadius - thetaRadius * Math.Sin(angle),
+                bottom + offsetRadius - offsetRadius * Math.Cos(angle)));
+        }
+    }
+
+    private void AddTopLeftCorner(List<(double X, double Y)> points, double left, double top, double thetaRadius, double offsetRadius, int steps)
+    {
+        for (var step = 1; step <= steps; step++)
+        {
+            var angle = Math.PI * 0.5 * step / steps;
+            points.Add(OffsetPoint(
+                left + thetaRadius - thetaRadius * Math.Cos(angle),
+                top - offsetRadius + offsetRadius * Math.Sin(angle)));
+        }
+    }
+
+    private (double X, double Y) OffsetPoint(double theta, double offset)
+    {
+        var frame = GetSpiralFrame(theta);
+        return (frame.X + frame.Nx * offset, frame.Y + frame.Ny * offset);
+    }
+
+    private static (double X, double Y) PolarPoint(double theta, double radius) =>
+        (Math.Sin(theta) * radius, -Math.Cos(theta) * radius);
+
+    private static (double X, double Y) RotatePoint(double x, double y, double degrees)
+    {
+        var radians = degrees * Math.PI / 180.0;
+        var cos = Math.Cos(radians);
+        var sin = Math.Sin(radians);
+        return (x * cos - y * sin, x * sin + y * cos);
+    }
+
+    private SpiralGeometryFrame GetSpiralFrame(double theta)
+    {
+        var (x, y) = SpiralPoint(theta);
+        var (thx, thy, thz) = HelixTangent3D(theta);
+        var (tx, ty) = Project(thx, thy, thz);
+        Normalise(ref tx, ref ty);
+
+        var nx = -ty;
+        var ny = tx;
+        if (nx * x + ny * y < 0)
+        {
+            nx = -nx;
+            ny = -ny;
+        }
+
+        return new SpiralGeometryFrame(x, y, tx, ty, nx, ny);
+    }
+
+    private static string PolygonPath(IReadOnlyList<(double X, double Y)> points)
+    {
+        if (points.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var path = new System.Text.StringBuilder($"M {points[0].X.I()} {points[0].Y.I()}");
+        for (var i = 1; i < points.Count; i++)
+        {
+            path.Append($" L {points[i].X.I()} {points[i].Y.I()}");
+        }
+
+        path.Append(" Z");
+        return path.ToString();
+    }
+
+    private static void Normalise(ref double x, ref double y)
+    {
+        var length = Math.Sqrt(x * x + y * y);
+        if (length < 1e-9)
+        {
+            x = 1;
+            y = 0;
+            return;
+        }
+
+        x /= length;
+        y /= length;
+    }
+
+    private static double SmoothStep(double edge0, double edge1, double value)
+    {
+        if (edge0 >= edge1)
+        {
+            return value >= edge1 ? 1.0 : 0.0;
+        }
+
+        var t = Math.Clamp((value - edge0) / (edge1 - edge0), 0.0, 1.0);
+        return t * t * (3.0 - 2.0 * t);
+    }
+
+    private static double Lerp(double start, double end, double progress) => start + (end - start) * progress;
+
+    private static MarkupString SvgText(double x, double y, double fontSize, string style, string? content) =>
+        new($"<text x=\"{x.I()}\" y=\"{y.I()}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"{fontSize.I()}\" style=\"{style}\">{HtmlEncoder.Default.Encode(content ?? string.Empty)}</text>");
+
+    private sealed record SpiralSegment(
+        int SubdivisionIndex,
+        int Cycle,
+        int SegmentIndex,
+        string Label,
+        string Color,
+        string ArcPath,
+        string MorphPath,
+        double MidX,
+        double MidY);
+
+    private sealed record SolidSurfaceSlice(int SubdivisionIndex, string Color, string Path);
+
+    private sealed record SurfaceLabel(int SubdivisionIndex, double X, double Y, string Text);
+
+    private sealed record ScaleDegreeLabel(double X, double Y, string Text);
+
+    private sealed record SelectedNote(int SubdivisionIndex, int? Cycle);
+
+    private sealed record NotePoolProfile(
+        string Label,
+        string HarmonyToDissonanceRatio,
+        double FontSizeRem,
+        double VisualOpacity,
+        string AccentColor);
+
+    private sealed record DiadAnalysis(
+        string LeftLabel,
+        string RightLabel,
+        int IntervalSemitones,
+        int FifthDistance,
+        string HarmonyPercent,
+        string DissonancePercent,
+        string HarmonyToDissonanceRatio,
+        double LeftLinePercent,
+        double RightLinePercent,
+        string LeftColor,
+        string RightColor,
+        string MoodLabel,
+        string MoodColor);
+
+    private sealed record TriadAnalysis(
+        string NotesLabel,
+        string HarmonyPercent,
+        string DissonancePercent,
+        string PairRatios,
+        string QualityLabel,
+        string QualityColor);
+
+    private sealed record NextMoveRecommendation(
+        int SubdivisionIndex,
+        string NoteLabel,
+        string ResultMoodLabel,
+        string ProgressPercent,
+        double Score);
+
+    private sealed record ScaleTemplate(string Name, int[] Intervals);
+
+    private sealed record ScaleRecommendation(
+        string Label,
+        string MatchSummary,
+        int Score);
+
+    private sealed record ProgressionMove(
+        NoteChord Chord,
+        string Relationship,
+        int CofDistance,
+        PairingStrength Strength);
+
+    private sealed record ProgressionPath(
+        string Title,
+        IReadOnlyList<ProgressionMove> Moves);
+
+    private static readonly ScaleTemplate[] CommonScales =
+    [
+        new("Chromatic", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]),
+        new("Major", [0, 2, 4, 5, 7, 9, 11]),
+        new("Natural Minor", [0, 2, 3, 5, 7, 8, 10]),
+        new("Harmonic Minor", [0, 2, 3, 5, 7, 8, 11]),
+        new("Melodic Minor", [0, 2, 3, 5, 7, 9, 11]),
+        new("Dorian", [0, 2, 3, 5, 7, 9, 10]),
+        new("Phrygian", [0, 1, 3, 5, 7, 8, 10]),
+        new("Lydian", [0, 2, 4, 6, 7, 9, 11]),
+        new("Mixolydian", [0, 2, 4, 5, 7, 9, 10]),
+        new("Locrian", [0, 1, 3, 5, 6, 8, 10]),
+        new("Major Pentatonic", [0, 2, 4, 7, 9]),
+        new("Minor Pentatonic", [0, 3, 5, 7, 10]),
+        new("Blues", [0, 3, 5, 6, 7, 10])
+    ];
+
+    private enum MoodTarget
+    {
+        Resonant,
+        Warm,
+        Balanced,
+        Tense,
+        Dissonant
+    }
+
+    private sealed record SpiralGeometryFrame(double X, double Y, double Tx, double Ty, double Nx, double Ny);
 }

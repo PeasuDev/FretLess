@@ -39,8 +39,9 @@
 }
 
 .mood-item:focus-visible {
-    outline: 2px solid #FFD700;
+    outline: 1px solid rgba(255,215,0,0.55);
     outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(255,215,0,0.1);
 }
 
 .mood-label {

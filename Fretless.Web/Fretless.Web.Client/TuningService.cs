@@ -4,7 +4,10 @@ namespace Fretless.Web.Client;
 
 public static class TuningService
 {
-    // MIDI note numbers: C0=0, C4=48 (middle C), standard guitar E2=40
+    public const int MinAudibleMidi = 16;  // E0 ≈ 20.6 Hz
+    public const int MaxAudibleMidi = 135; // D#10 ≈ 19.9 kHz
+
+    // MIDI note numbers: C-1=0, C4=60 (middle C), standard guitar E2=40
     public static readonly IReadOnlyList<TuningPreset> Presets =
     [
         new("Standard (EADGBE)",         [40, 45, 50, 55, 59, 64]),
@@ -27,9 +30,9 @@ public static class TuningService
 
     public static TuningPreset Standard => Presets[0];
 
-    // All note names across octaves for the per-string dropdown (MIDI 16–84)
+    // All note names across octaves for the per-string dropdown (E0–D#10, up to 20 kHz)
     public static IReadOnlyList<(int Midi, string Label)> AllNotes { get; } =
-        Enumerable.Range(16, 69)
+        Enumerable.Range(MinAudibleMidi, MaxAudibleMidi - MinAudibleMidi + 1)
             .Select(m => (m, MidiLabel(m)))
             .ToList();
 

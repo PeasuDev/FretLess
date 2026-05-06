@@ -112,7 +112,7 @@
     {
         if (_strings.Count >= MaxStrings) return;
         // Add a string tuned a 5th below the lowest current string
-        _strings.Insert(0, Math.Max(16, _strings[0] - 5));
+        _strings.Insert(0, Math.Max(TuningService.MinAudibleMidi, _strings[0] - 5));
         await NotifyChanged("Custom");
         _selectedPresetName = "Custom";
     }

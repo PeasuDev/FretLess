@@ -5,59 +5,124 @@
     overflow: hidden;
 }
 
-/* Spiral fills every pixel */
+
+/* ── Left sidebar — branding + mode controls ─────────────── */
+.left-sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--left-sidebar-width);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 0.85rem;
+    background: rgba(13,13,26,0.78);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-right: 1px solid rgba(255,255,255,0.07);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+
+.fretless-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.site-title {
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    font-weight: 800;
+    color: #FFD700;
+    margin: 0;
+    letter-spacing: 0.06em;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+    line-height: 1.1;
+}
+
+.site-subtitle {
+    color: #aaaacc;
+    margin: 0;
+    font-size: clamp(0.6rem, 1.3vw, 0.72rem);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+}
+
+/* ── Mode toggle — vertical stack in sidebar ── */
+.mode-toggle {
+    display: flex;
+    flex-direction: column;
+    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.mode-btn {
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    color: rgba(180,180,210,0.65);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 6px 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.18s, color 0.18s;
+    white-space: nowrap;
+}
+
+.mode-btn:hover {
+    color: #FFD700;
+}
+
+.mode-btn--active {
+    background: rgba(255,215,0,0.15);
+    color: #FFD700;
+}
+
+.mode-btn:focus-visible {
+    outline: 1px solid rgba(255,215,0,0.55);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(255,215,0,0.12);
+}
+
+/* ── Spiral — inset between both sidebars ──────────────────── */
 .wheel-layer {
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: var(--left-sidebar-width);
+    right: var(--right-panel-width);
     display: flex;
     align-items: stretch;
     justify-content: stretch;
     container-type: size;
 }
 
-/* Floating header — top-left */
-.fretless-header {
-    position: absolute;
-    top: 1rem;
-    left: 1.25rem;
-    z-index: 10;
-}
-
-.site-title {
-    font-size: clamp(1.1rem, 3vw, 1.6rem);
-    font-weight: 800;
-    color: #FFD700;
-    margin: 0;
-    letter-spacing: 0.06em;
-    text-shadow: 0 2px 12px rgba(0,0,0,0.8);
-}
-
-.site-subtitle {
-    color: #aaaacc;
-    margin: 0.1rem 0 0;
-    font-size: clamp(0.65rem, 1.5vw, 0.78rem);
-    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
-}
-
-/* Floating right panel */
+/* ── Right panel ─────────────────────────────────────────── */
 .legend-section {
     position: absolute;
-    top: 1rem;
-    right: 1rem;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--right-panel-width);
     z-index: 10;
-    width: clamp(180px, 18vw, 230px);
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    max-height: calc(100dvh - 2rem);
     overflow-y: auto;
     overscroll-behavior: contain;
-    background: rgba(13,13,26,0.72);
+    background: rgba(13,13,26,0.78);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px;
-    padding: 0.85rem;
+    border-left: 1px solid rgba(255,255,255,0.07);
+    padding: 1rem 0.85rem;
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.15) transparent;
 }
@@ -71,6 +136,23 @@
     margin: 0 0 0.4rem;
 }
 
+/* ── Fretboard — bottom strip between the sidebars ──────── */
+.fretboard-section {
+    position: absolute;
+    bottom: 0;
+    left: var(--left-sidebar-width);
+    right: var(--right-panel-width);
+    z-index: 10;
+    background: rgba(13,13,26,0.78);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 0 1rem 0.75rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
 .fretboard-section--collapsed {
     height: auto !important;
     padding-bottom: 0;
@@ -82,19 +164,19 @@
     min-height: 44px;
 }
 
-/* Guitar icon toggle button — floats bottom-left when panel is collapsed */
+/* Guitar icon toggle — floats just right of the left sidebar */
 .fretboard-toggle-btn {
     position: absolute;
     bottom: 1rem;
-    left: 1rem;
+    left: calc(var(--left-sidebar-width) + 0.75rem);
     z-index: 11;
     background: rgba(13,13,26,0.82);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(192,160,96,0.35);
     border-radius: 50%;
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -111,8 +193,9 @@
 }
 
 .fretboard-toggle-btn:focus-visible {
-    outline: 2px solid #FFD700;
+    outline: 1px solid rgba(255,215,0,0.55);
     outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(255,215,0,0.12);
 }
 
 /* Minimize / expand button inside the resize handle */
@@ -139,31 +222,13 @@
 }
 
 .fretboard-minimize-btn:focus-visible {
-    outline: 2px solid #FFD700;
+    outline: 1px solid rgba(255,215,0,0.55);
     outline-offset: 2px;
-}
-
-/* Floating bottom panel */
-.fretboard-section {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    /* keep right edge flush with the legend panel: 1rem gap + panel width + 1rem outer */
-    right: calc(clamp(180px, 18vw, 230px) + 2rem);
-    z-index: 10;
-    background: rgba(13,13,26,0.78);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(255,255,255,0.07);
-    padding: 0 1rem 0.75rem;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+    box-shadow: 0 0 0 3px rgba(255,215,0,0.12);
 }
 
 .fretboard-resize-handle {
     width: 100%;
-    /* 44px meets WCAG 2.5.5 minimum touch-target size */
     min-height: 44px;
     cursor: ns-resize;
     flex-shrink: 0;
@@ -184,15 +249,45 @@
 }
 
 .fretboard-resize-handle:focus-visible {
-    outline: 2px solid #FFD700;
+    outline: 1px solid rgba(255,215,0,0.45);
     outline-offset: -2px;
 }
 
-/* Responsive: stack everything on narrow screens */
+/* ── Responsive: narrow screens ──────────────────────────── */
 @media (max-width: 680px) {
-    .fretless-header {
-        top: 0.6rem;
-        left: 0.75rem;
+    :root {
+        --left-sidebar-width: 0px;
+        --right-panel-width:  0px;
+    }
+
+    .left-sidebar {
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: auto;
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .mode-toggle {
+        flex-direction: row;
+        border-radius: 20px;
+    }
+
+    .mode-btn {
+        text-align: center;
+    }
+
+    .wheel-layer {
+        left: 0;
+        right: 0;
+        top: 56px;
     }
 
     .legend-section {
@@ -200,13 +295,23 @@
         bottom: 0;
         left: 0;
         right: 0;
-        width: auto;
-        max-height: 40dvh;
-        border-radius: 12px 12px 0 0;
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid rgba(255,255,255,0.07);
+        max-height: 38dvh;
+        border-radius: 0;
         padding-bottom: env(safe-area-inset-bottom, 0.5rem);
     }
 
-    .fretboard-section {
+    .fretboard-section,
+    .fretboard-toggle-btn {
         display: none;
     }
+}
+
+.fretless-workspace {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    background: #0d0d1a;
 }

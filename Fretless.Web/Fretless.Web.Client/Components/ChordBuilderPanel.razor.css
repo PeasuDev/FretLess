@@ -1,0 +1,147 @@
+.chord-builder-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.panel-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #aaaacc;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 0;
+}
+
+/* ── Placeholder ── */
+.cb-placeholder {
+    margin: 0;
+    padding: 0.5rem 0;
+    color: rgba(170,170,204,0.45);
+    font-size: 0.78rem;
+    font-style: italic;
+}
+
+/* ── Chord summary ── */
+.chord-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.chord-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.chord-name {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #FFD700;
+    letter-spacing: 0.03em;
+    line-height: 1;
+}
+
+.chord-type-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    border: 1px solid;
+    border-radius: 20px;
+    padding: 2px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+}
+
+.chord-description {
+    font-size: 0.72rem;
+    color: rgba(200,200,220,0.6);
+    margin: 0;
+    font-style: italic;
+}
+
+/* ── Notes section ── */
+.notes-section,
+.intervals-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.notes-heading {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: rgba(170,170,204,0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 0;
+}
+
+.note-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.note-chip {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.3rem;
+    border-radius: 8px;
+    padding: 4px 8px;
+    opacity: 0.9;
+}
+
+.note-chip-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.note-chip-remove {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: inherit;
+    font-size: 0.65rem;
+    opacity: 0.7;
+    cursor: pointer;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.note-chip-remove:hover {
+    opacity: 1;
+}
+
+/* ── Intervals section ── */
+.interval-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.interval-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+}
+
+.interval-semitones {
+    width: 28px;
+    text-align: right;
+    color: rgba(255,215,0,0.65);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.interval-label {
+    color: rgba(200,200,230,0.75);
+}

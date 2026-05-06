@@ -28,6 +28,24 @@ public static class MusicTheoryService
     public static string DisplayName(string note) =>
         EnharmonicDisplay.TryGetValue(note, out var d) ? d : note;
 
+    // Sharp-only spellings for notes that are normally stored as flats in CircleOfFifths
+    private static readonly Dictionary<string, string> SharpOnlyNames = new()
+    {
+        ["Db"] = "C#", ["Ab"] = "G#", ["Eb"] = "D#", ["Bb"] = "A#",
+    };
+
+    // Flat-only spellings for notes stored as sharps in CircleOfFifths
+    private static readonly Dictionary<string, string> FlatOnlyNames = new()
+    {
+        ["F#"] = "Gb",
+    };
+
+    /// <summary>Returns the notation-specific display name (single spelling, no slash).</summary>
+    public static string DisplayName(string note, bool useFlats) =>
+        useFlats
+            ? (FlatOnlyNames.TryGetValue(note, out var f) ? f : note)
+            : (SharpOnlyNames.TryGetValue(note, out var s) ? s : note);
+
     // ── Interval frequency ratios (just intonation approximations) ───────────
     // Index matches ChromaticNotes (semitone 0–11 from any root).
     // Used to give each note-segment a proportional arc length in ratio mode.
@@ -368,5 +386,78 @@ public static class MusicTheoryService
             var note  = CircleOfFifths[(cofRootIndex + d.offset) % 12];
             return new DiatonicChord(d.role, new NoteChord(note, d.type), d.desc);
         }).ToList();
+    }
+
+    // ── Harmonic Stability ───────────────────────────────────────────────────
+    // Consonance score for a semitone interval (0 = most consonant, 1 = most dissonant).
+    // Based on classical just-intonation ranking of intervals.
+    private static readonly double[] IntervalConsonance =
+    [
+        1.00,  // 0  – unison
+        0.17,  // 1  – minor 2nd   (very dissonant)
+        0.33,  // 2  – major 2nd
+        0.72,  // 3  – minor 3rd
+        0.78,  // 4  – major 3rd
+        0.85,  // 5  – perfect 4th
+        0.10,  // 6  – tritone     (most dissonant)
+        0.95,  // 7  – perfect 5th (most consonant after unison)
+        0.70,  // 8  – minor 6th
+        0.75,  // 9  – major 6th
+        0.38,  // 10 – minor 7th
+        0.25,  // 11 – major 7th
+    ];
+
+    /// <summary>
+    /// Returns a consonance score in [0,1] for the interval between two semitone indices.
+    /// 1.0 = perfectly consonant, 0.0 = maximally dissonant.
+    /// </summary>
+    public static double IntervalConsonanceScore(int noteIndexA, int noteIndexB)
+    {
+        var semitones = Math.Abs(noteIndexA - noteIndexB) % 12;
+        // Fold intervals above a tritone down to their mirror (e.g. minor 7th = major 2nd inverted)
+        return IntervalConsonance[semitones];
+    }
+
+    /// <summary>
+    /// For each note in <paramref name="noteNames"/>, computes its average consonance
+    /// with all other notes in the set. Returns a list of (NoteName, AverageConsonance)
+    /// pairs in the same order as the input. Each value is in [0,1].
+    /// </summary>
+    public static IReadOnlyList<(string Note, double Consonance)> ComputeHarmonicStability(
+        IReadOnlyList<string> noteNames)
+    {
+        var indices = noteNames.Select(NoteIndex).ToArray();
+        var result  = new (string Note, double Consonance)[noteNames.Count];
+
+        for (int i = 0; i < noteNames.Count; i++)
+        {
+            if (noteNames.Count == 1)
+            {
+                result[i] = (noteNames[i], 1.0);
+                continue;
+            }
+
+            double sum = 0;
+            int count  = 0;
+            for (int j = 0; j < noteNames.Count; j++)
+            {
+                if (i == j) continue;
+                sum += IntervalConsonanceScore(indices[i], indices[j]);
+                count++;
+            }
+            result[i] = (noteNames[i], count > 0 ? sum / count : 1.0);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Overall harmonic stability of a chord (average of all pairwise consonance scores).
+    /// Returns a value in [0,1] where 1 = perfectly consonant.
+    /// </summary>
+    public static double OverallHarmonicStability(IReadOnlyList<string> noteNames)
+    {
+        if (noteNames.Count < 2) return 1.0;
+        var scores = ComputeHarmonicStability(noteNames);
+        return scores.Average(s => s.Consonance);
     }
 }

@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="C:\Users\tpeas\OneDrive\Documents\Nautilus\Nautilus App.css" Link="Nautilus App.css" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Fretless.Web.Client\Fretless.Web.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.7" />
   </ItemGroup>

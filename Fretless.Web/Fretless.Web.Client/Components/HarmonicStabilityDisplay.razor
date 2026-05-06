@@ -1,0 +1,178 @@
+@using Fretless.Web.Client.Models
+
+@if (Notes is { Count: >= 3 })
+{
+    var stability = MusicTheoryService.ComputeHarmonicStability(Notes);
+    var overall   = MusicTheoryService.OverallHarmonicStability(Notes);
+    var bubbles   = BuildBubbles(stability);
+
+    <div class="hs-wrapper">
+        <h3 class="notes-heading">Harmonic Stability</h3>
+
+        <div class="hs-label-row">
+            <span class="hs-label-text">@StabilityLabel(overall)</span>
+            <span class="hs-label-pct" style="color: @StabilityColor(overall);">
+                @((overall * 100).ToString("F0"))%
+            </span>
+        </div>
+
+        <svg class="hs-svg"
+             viewBox="0 0 @ViewSize @ViewSize"
+             xmlns="http://www.w3.org/2000/svg"
+             aria-label="Harmonic stability bubble cluster"
+             role="img">
+
+            @* Connection lines between bubbles *@
+            @foreach (var line in BuildLines(bubbles))
+            {
+                <line x1="@line.X1.I()" y1="@line.Y1.I()"
+                      x2="@line.X2.I()" y2="@line.Y2.I()"
+                      stroke="@line.Color"
+                      stroke-width="@line.Width.I()"
+                      stroke-opacity="0.35"
+                      stroke-linecap="round" />
+            }
+
+            @* Bubble glows (soft outer ring) *@
+            @foreach (var b in bubbles)
+            {
+                <circle cx="@b.Cx.I()" cy="@b.Cy.I()"
+                        r="@((b.Radius + 4).I())"
+                        fill="@b.Color"
+                        fill-opacity="0.12" />
+            }
+
+            @* Bubble fills *@
+            @foreach (var b in bubbles)
+            {
+                <circle cx="@b.Cx.I()" cy="@b.Cy.I()"
+                        r="@b.Radius.I()"
+                        fill="@b.Color"
+                        fill-opacity="0.82"
+                        stroke="@b.Color"
+                        stroke-width="1.2"
+                        stroke-opacity="0.9" />
+            }
+
+            @* Note labels *@
+            @foreach (var b in bubbles)
+            {
+                @((MarkupString)$"<text x=\"{b.Cx.I()}\" y=\"{(b.Cy + 1).I()}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"{Math.Max(b.Radius * 0.65, 7).I()}\" font-weight=\"700\" fill=\"#ffffff\" fill-opacity=\"0.95\">{b.Note}</text>")
+            }
+        </svg>
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<string> Notes { get; set; } = [];
+
+    private const double ViewSize   = 130;
+    private const double Center     = ViewSize / 2;
+    private const double MinRadius  = 14;
+    private const double MaxRadius  = 28;
+
+    private record BubbleInfo(string Note, double Cx, double Cy, double Radius, string Color);
+    private record LineInfo(double X1, double Y1, double X2, double Y2, string Color, double Width);
+
+    private static IReadOnlyList<BubbleInfo> BuildBubbles(IReadOnlyList<(string Note, double Consonance)> stability)
+    {
+        int n = stability.Count;
+
+        // Lay out bubbles in a circle; for tighter clusters, shrink orbit radius
+        double orbitRadius = n switch
+        {
+            3 => 34,
+            4 => 36,
+            _ => 38,
+        };
+
+        var bubbles = new List<BubbleInfo>(n);
+        for (int i = 0; i < n; i++)
+        {
+            var (note, consonance) = stability[i];
+            double angle = 2 * Math.PI * i / n - Math.PI / 2; // start at top
+            double cx    = Center + orbitRadius * Math.Cos(angle);
+            double cy    = Center + orbitRadius * Math.Sin(angle);
+            double r     = MinRadius + consonance * (MaxRadius - MinRadius);
+            bubbles.Add(new BubbleInfo(note, cx, cy, r, ConsonanceColor(consonance)));
+        }
+        return bubbles;
+    }
+
+    private static IReadOnlyList<LineInfo> BuildLines(IReadOnlyList<BubbleInfo> bubbles)
+    {
+        var lines = new List<LineInfo>();
+        for (int i = 0; i < bubbles.Count; i++)
+        {
+            for (int j = i + 1; j < bubbles.Count; j++)
+            {
+                var a = bubbles[i];
+                var b = bubbles[j];
+                // Blend the two endpoint colors for the line
+                var color = BlendColors(a.Color, b.Color);
+                // Thicker lines for more consonant pairs
+                var aConsonance = (a.Radius - MinRadius) / (MaxRadius - MinRadius);
+                var bConsonance = (b.Radius - MinRadius) / (MaxRadius - MinRadius);
+                var avgConsonance = (aConsonance + bConsonance) / 2.0;
+                lines.Add(new LineInfo(a.Cx, a.Cy, b.Cx, b.Cy, color, 0.8 + avgConsonance * 1.4));
+            }
+        }
+        return lines;
+    }
+
+    // Map consonance [0,1] to a color: red (0) → yellow (0.5) → green (1)
+    private static string ConsonanceColor(double consonance)
+    {
+        double t = Math.Clamp(consonance, 0, 1);
+        if (t <= 0.5)
+        {
+            // red → yellow
+            double u = t / 0.5;
+            int r = 220;
+            int g = (int)(u * 200);
+            int bl = 30;
+            return $"rgb({r},{g},{bl})";
+        }
+        else
+        {
+            // yellow → green
+            double u = (t - 0.5) / 0.5;
+            int r = (int)(220 * (1 - u));
+            int g = (int)(200 + u * 30);
+            int bl = 30;
+            return $"rgb({r},{g},{bl})";
+        }
+    }
+
+    private static string BlendColors(string a, string b)
+    {
+        // Simple midpoint blend — return yellow for consonant pairs, red for dissonant
+        // Both colors are "rgb(r,g,b)" formatted
+        static (int r, int g, int bl) Parse(string color)
+        {
+            var nums = color[4..^1].Split(',');
+            return (int.Parse(nums[0]), int.Parse(nums[1]), int.Parse(nums[2]));
+        }
+        var (r1, g1, b1) = Parse(a);
+        var (r2, g2, b2) = Parse(b);
+        return $"rgb({(r1 + r2) / 2},{(g1 + g2) / 2},{(b1 + b2) / 2})";
+    }
+
+    private static string StabilityLabel(double v) => v switch
+    {
+        >= 0.85 => "Consonant",
+        >= 0.65 => "Stable",
+        >= 0.45 => "Tense",
+        >= 0.25 => "Dissonant",
+        _       => "Clashing",
+    };
+
+    private static string StabilityColor(double v) => v switch
+    {
+        >= 0.85 => "#4CAF50",
+        >= 0.65 => "#A8C74A",
+        >= 0.45 => "#E8C840",
+        >= 0.25 => "#E8792B",
+        _       => "#C0392B",
+    };
+}

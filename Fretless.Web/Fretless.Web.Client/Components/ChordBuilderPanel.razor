@@ -1,0 +1,87 @@
+@using Fretless.Web.Client.Models
+
+<div class="chord-builder-panel">
+    <h2 class="panel-title">Chord Builder</h2>
+
+    @* Selected notes accumulator *@
+    <div class="notes-section">
+        <h3 class="notes-heading">Notes</h3>
+        @if (BuiltNotes.Count == 0)
+        {
+            <p class="cb-placeholder">Select a note on the wheel</p>
+        }
+        else
+        {
+            <div class="note-chips">
+                @foreach (var note in BuiltNotes)
+                {
+                    <div class="note-chip" style="background: @NoteColor(note); color: #fff;">
+                        <span class="note-chip-name">@note</span>
+                        <button class="note-chip-remove" aria-label="Remove @note" @onclick="() => RemoveNote(note)">✕</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @if (BuiltNotes.Count >= 3)
+    {
+        <HarmonicStabilityDisplay Notes="@BuiltNotes" />
+    }
+
+    @if (ActiveChord is not null)
+    {
+        <div class="chord-summary">
+            <div class="chord-name-row">
+                <span class="chord-name">@ActiveChord.DisplayName</span>
+                <span class="chord-type-badge" style="border-color: @MoodColor; color: @MoodColor;">
+                    @ActiveChord.Type.Name
+                </span>
+            </div>
+            <p class="chord-description">@ActiveChord.Type.Description</p>
+        </div>
+
+        <div class="intervals-section">
+            <h3 class="notes-heading">Intervals</h3>
+            <div class="interval-list">
+                @foreach (var (label, semitones) in IntervalList)
+                {
+                    <div class="interval-row">
+                        <span class="interval-semitones">@semitones st</span>
+                        <span class="interval-label">@label</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public NoteChord? ActiveChord { get; set; }
+    [Parameter] public List<string> BuiltNotes { get; set; } = [];
+    [Parameter] public EventCallback<string> NoteRemoved { get; set; }
+
+    private Task RemoveNote(string note) => NoteRemoved.InvokeAsync(note);
+
+    private string MoodColor => ActiveChord is not null
+        ? MusicTheoryService.MoodColor(ActiveChord.Type.Mood)
+        : "#aaaacc";
+
+    private static readonly string[] IntervalNames =
+    [
+        "Unison", "Minor 2nd", "Major 2nd", "Minor 3rd", "Major 3rd",
+        "Perfect 4th", "Tritone", "Perfect 5th", "Minor 6th",
+        "Major 6th", "Minor 7th", "Major 7th"
+    ];
+
+    private IEnumerable<(string Label, int Semitones)> IntervalList =>
+        ActiveChord?.Type.Intervals
+            .Select(i => (IntervalNames[i], i))
+        ?? [];
+
+    private static string NoteColor(string note)
+    {
+        var idx = Array.IndexOf(MusicTheoryService.CircleOfFifths, note);
+        return MusicTheoryService.NoteColor(idx < 0 ? 0 : idx, 65, 42);
+    }
+}

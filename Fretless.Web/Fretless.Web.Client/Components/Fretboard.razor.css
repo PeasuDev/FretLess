@@ -17,6 +17,95 @@
     max-width: 760px;
 }
 
+.fretboard-position-row {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+}
+
+.fretboard-position-label {
+    font-size: 0.72rem;
+    color: #666688;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.fretboard-position-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.fretboard-position-btn {
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    background: #ffffff;
+    color: #000000;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    min-width: 2.2rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.fretboard-position-btn:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+}
+
+.fretboard-position-btn.active {
+    background: #FFD700;
+    color: #1a1a2e;
+    border-color: #FFD700;
+    font-weight: 700;
+}
+
+.fretboard-audio-row {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.fretboard-audio-mute {
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    background: #ffffff;
+    color: #000000;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.28rem 0.6rem;
+    cursor: pointer;
+}
+
+.fretboard-audio-label {
+    font-size: 0.72rem;
+    color: #666688;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.fretboard-volume-slider {
+    flex: 1;
+    accent-color: #ffffff;
+}
+
+.fretboard-volume-value {
+    min-width: 3ch;
+    font-size: 0.72rem;
+    color: #aaaacc;
+    text-align: right;
+}
+
 .fretboard-header {
     width: 100%;
     display: flex;

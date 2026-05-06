@@ -9,6 +9,42 @@
     <div class="fretboard-scale-row">
         <ScaleSelector @bind-ActiveOverlay="InternalScale" />
     </div>
+    
+    @* Position selector for scale degrees *@
+    @if (InternalScale is not null)
+    {
+        <div class="fretboard-position-row">
+            <span class="fretboard-position-label">Position:</span>
+            <div class="fretboard-position-buttons">
+                <button class="fretboard-position-btn @(SelectedPosition == null ? "active" : "")" 
+                        @onclick="() => SelectPosition(null)">
+                    All
+                </button>
+                @foreach (var (degree, index) in GetScaleDegrees())
+                {
+                    var degreeCapture = degree;
+                    <button class="fretboard-position-btn @(SelectedPosition == degree ? "active" : "")" 
+                            @onclick="() => SelectPosition(degreeCapture)">
+                        @GetRomanNumeral(index)
+                    </button>
+                }
+            </div>
+        </div>
+    }
+    
+    <div class="fretboard-audio-row">
+        <button class="fretboard-audio-mute" @onclick="ToggleMute" aria-label="Toggle mute">@(_isMuted ? "Unmute" : "Mute")</button>
+        <label class="fretboard-audio-label" for="fretboard-volume">Volume</label>
+        <input id="fretboard-volume"
+               class="fretboard-volume-slider"
+               type="range"
+               min="0"
+               max="1"
+               step="0.01"
+               value="@_volume"
+               @oninput="OnVolumeInput" />
+        <span class="fretboard-volume-value">@((int)Math.Round(_volume * 100))%</span>
+    </div>
     <svg viewBox="0 0 @(FretCount * FretWidth + NutWidth + BtnAreaWidth) @(StringCount * StringSpacing + 20)"
          xmlns="http://www.w3.org/2000/svg"
          class="fretboard"
@@ -87,6 +123,9 @@
                 {
                     var noteIdx = (OpenStringNotes[s] + f) % 12;
                     if (!InternalScale.NoteSet.Contains(noteIdx)) continue;
+                    
+                    // Filter by selected position
+                    if (SelectedPosition.HasValue && noteIdx != SelectedPosition.Value) continue;
 
                     var isRoot  = noteIdx == InternalScale.RootIndex;
                     var cx      = BtnAreaWidth + (f == 0 ? NutWidth / 2.0 : NutWidth + (f - 0.5) * FretWidth);
@@ -95,7 +134,7 @@
                     var stroke  = isRoot ? "#1a1a2e" : "rgba(255,255,255,0.35)";
                     var label   = MusicTheoryService.ScaleDegreeLabel(noteIdx, InternalScale.RootIndex);
                     var fLocal  = f; var sLocal = s;
-                    <g @onclick="() => PlayNote(noteIdx)" style="cursor:pointer" class="scale-dot @(isRoot ? "scale-dot--root" : "")">
+                    <g @onclick="() => PlayMidi(OpenStringNotes[sLocal] + fLocal)" style="cursor:pointer" class="scale-dot @(isRoot ? "scale-dot--root" : "")">
                         <circle cx="@cx.ToInvariant()" cy="@cy.ToInvariant()" r="7"
                                 fill="@fill" stroke="@stroke" stroke-width="1"
                                 opacity="@(isRoot ? "0.92" : "0.55")" />
@@ -115,7 +154,8 @@
                 var cx = BtnAreaWidth + NutWidth + (dot.Fret - 0.5) * FretWidth;
                 var cy = 10 + (StringCount - 1 - dot.StringIndex) * StringSpacing + StringSpacing / 2.0;
                 var color = MusicTheoryService.MoodColor(ActiveChord.Type.Mood);
-                <g @onclick="() => PlayNote(dot.NoteIndex)" style="cursor:pointer">
+                var dotLocal = dot;
+                <g @onclick="() => PlayMidi(OpenStringNotes[dotLocal.StringIndex] + dotLocal.Fret)" style="cursor:pointer">
                     <circle cx="@cx.ToInvariant()" cy="@cy.ToInvariant()" r="9"
                             fill="@color" stroke="#1a1a2e" stroke-width="1.5"
                             class="fret-dot" />
@@ -166,6 +206,9 @@
     [Parameter] public EventCallback<TuningPreset> TuningChanged { get; set; }
 
     private ScaleOverlay? InternalScale { get; set; }
+    private int? SelectedPosition { get; set; }
+    private double _volume = 0.72;
+    private bool _isMuted;
 
     private TuningPreset ActiveTuning => Tuning ?? TuningService.Standard;
 
@@ -221,17 +264,73 @@
     private async Task ShiftString(int stringIndex, int semitones)
     {
         var notes = ActiveTuning.MidiNotes.ToArray();
-        notes[stringIndex] = Math.Clamp(notes[stringIndex] + semitones, 16, 84);
+        notes[stringIndex] = Math.Clamp(notes[stringIndex] + semitones, TuningService.MinAudibleMidi, TuningService.MaxAudibleMidi);
         var updated = new TuningPreset("Custom", notes);
         await TuningChanged.InvokeAsync(updated);
     }
 
-    private async Task PlayNote(int noteIndex)
+    private async Task PlayMidi(int midi)
     {
-        var noteName = $"{MusicTheoryService.NoteAtIndex(noteIndex)}4";
+        var clampedMidi = Math.Clamp(midi, TuningService.MinAudibleMidi, TuningService.MaxAudibleMidi);
+        var noteName = TuningService.MidiLabel(clampedMidi);
         await JS.InvokeVoidAsync("fretlessAudio.playNote", noteName);
     }
 
+    private async Task OnVolumeInput(ChangeEventArgs e)
+    {
+        if (!double.TryParse(e.Value?.ToString(), out var volume))
+        {
+            return;
+        }
+
+        _volume = Math.Clamp(volume, 0.0, 1.0);
+        await JS.InvokeVoidAsync("fretlessAudio.setMasterVolume", _volume);
+    }
+
+    private async Task ToggleMute()
+    {
+        _isMuted = !_isMuted;
+        await JS.InvokeVoidAsync("fretlessAudio.setMuted", _isMuted);
+    }
+
     private static MarkupString SvgText(double x, double y, string fontSize, string style, string? content) =>
-        new($"<text x=\"{x.ToInvariant()}\" y=\"{y.ToInvariant()}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"{fontSize}\" style=\"{style}\">{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(content ?? string.Empty)}</text>");
+        new($"<text x=\"{x.ToInvariant()}\" y=\"{y.ToInvariant()}\" text-anchor=\"middle\" dominant-baseline=\"central\" alignment-baseline=\"central\" dy=\"0.04em\" font-size=\"{fontSize}\" style=\"{style}\">{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(content ?? string.Empty)}</text>");
+
+    private void SelectPosition(int? degree)
+    {
+        SelectedPosition = degree;
+    }
+
+    private List<(int degree, int index)> GetScaleDegrees()
+    {
+        if (InternalScale is null) return new();
+        
+        var degrees = new List<(int degree, int index)>();
+        var orderedNotes = InternalScale.NoteSet
+            .OrderBy(n => (n - InternalScale.RootIndex + 12) % 12)
+            .ToList();
+        
+        for (int i = 0; i < orderedNotes.Count; i++)
+        {
+            degrees.Add((orderedNotes[i], i + 1));
+        }
+        
+        return degrees;
+    }
+
+    private string GetRomanNumeral(int index)
+    {
+        return index switch
+        {
+            1 => "i",
+            2 => "ii",
+            3 => "iii",
+            4 => "iv",
+            5 => "v",
+            6 => "vi",
+            7 => "vii",
+            8 => "viii",
+            _ => index.ToString()
+        };
+    }
 }

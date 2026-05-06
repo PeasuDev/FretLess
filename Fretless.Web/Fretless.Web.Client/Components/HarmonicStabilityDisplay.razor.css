@@ -1,0 +1,33 @@
+.hs-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.hs-label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.4rem;
+}
+
+.hs-label-text {
+    font-size: 0.7rem;
+    color: rgba(200,200,220,0.65);
+    font-style: italic;
+}
+
+.hs-label-pct {
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+}
+
+.hs-svg {
+    width: 100%;
+    /* Square aspect ratio — fills the panel width */
+    aspect-ratio: 1 / 1;
+    display: block;
+    overflow: visible;
+}

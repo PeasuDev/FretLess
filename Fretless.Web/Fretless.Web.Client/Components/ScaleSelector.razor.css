@@ -17,7 +17,7 @@
 }
 
 .scale-selector-header:focus-visible {
-    outline: 2px solid #FFD700;
+    outline: 1px solid rgba(255,215,0,0.5);
     outline-offset: -2px;
 }
 
