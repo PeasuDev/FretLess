@@ -19,6 +19,13 @@ public static class LibraryRegistry
             DemoType: typeof(ChordBuilderPanelDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ChordBuilderPanel.razor"),
         new(
+            Slug: "chord-pairings",
+            Title: "ChordPairings",
+            Description: "Lists chords that pair with the active chord, grouped into Resolved & Diatonic vs Suspended & Borrowed.",
+            Group: LibraryGroup.Components,
+            DemoType: typeof(ChordPairingsDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ChordPairings.razor"),
+        new(
             Slug: "mood-legend",
             Title: "MoodLegend",
             Description: "Row of mood filter chips driven by MusicTheoryService.MoodColors.",

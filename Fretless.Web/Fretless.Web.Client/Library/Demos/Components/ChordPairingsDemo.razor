@@ -1,0 +1,77 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+@using Fretless.Web.Client.Models
+
+<LibraryFrame Title="ChordPairings"
+              Description="Given an ActiveChord, lists chords that pair with it via MusicTheoryService.GetPairedChords. Splits results into Resolved & Diatonic vs Suspended & Borrowed groups; each chip plays the chord on click and raises ChordSelected. Renders nothing when ActiveChord is null."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/ChordPairings.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Empty — no ActiveChord</h3>
+            <div class="variant-card__render">
+                <ChordPairings />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ChordPairings /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">C major active</h3>
+            <div class="variant-card__render">
+                <ChordPairings ActiveChord="CMajor" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ChordPairings ActiveChord="cMajor" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">A minor active</h3>
+            <div class="variant-card__render">
+                <ChordPairings ActiveChord="AMinor" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ChordPairings ActiveChord="aMinor" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Active chord:
+                <select @bind="_playgroundKey">
+                    @foreach (var (key, _) in PlaygroundOptions)
+                    {
+                        <option value="@key">@key</option>
+                    }
+                </select>
+            </label>
+            <span>Last selected: <strong>@(_lastSelected?.DisplayName ?? "(none)")</strong></span>
+            <button type="button" @onclick="() => _lastSelected = null">Clear</button>
+        </div>
+        <div class="playground__render">
+            <ChordPairings ActiveChord="@PlaygroundChord" ChordSelected="OnPairingSelected" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly ChordType MajorType = MusicTheoryService.ChordTypes.First(t => t.Symbol == "");
+    private static readonly ChordType MinorType = MusicTheoryService.ChordTypes.First(t => t.Symbol == "m");
+    private static readonly ChordType Dom7Type  = MusicTheoryService.ChordTypes.First(t => t.Symbol == "7");
+
+    private static readonly NoteChord CMajor = new("C", MajorType);
+    private static readonly NoteChord AMinor = new("A", MinorType);
+    private static readonly NoteChord G7     = new("G", Dom7Type);
+
+    private static readonly (string Key, NoteChord Chord)[] PlaygroundOptions =
+    [
+        ("C major", CMajor),
+        ("A minor", AMinor),
+        ("G7",      G7),
+    ];
+
+    private string _playgroundKey = "C major";
+    private NoteChord? _lastSelected;
+
+    private NoteChord PlaygroundChord =>
+        PlaygroundOptions.First(o => o.Key == _playgroundKey).Chord;
+
+    private void OnPairingSelected(NoteChord chord) => _lastSelected = chord;
+}
