@@ -1,19 +1,141 @@
-@inherits LayoutComponentBase
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime JS
+@inject AudioInputNoteService AudioInput
+@inject InstrumentConnectionService InstrumentConnections
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<NavMenu />
 
-    <main>
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+<div class="reset-button-container">
+    <button class="analog-input-button @(_isAnalogInputEnabled ? "active" : null)"
+            @onclick="OpenConnectInstrumentModal"
+            title="@InstrumentConnectionButtonLabel"
+            aria-label="@InstrumentConnectionButtonLabel"
+            aria-pressed="@_isAnalogInputEnabled">
+        <span>@InstrumentConnectionButtonLabel</span>
+    </button>
+    <button class="audio-toggle-button @(_isAudioMuted ? "muted" : null)"
+            @onclick="ToggleAudioMuteAsync"
+            title="@(_isAudioMuted ? "Unmute app audio" : "Mute app audio")"
+            aria-label="@(_isAudioMuted ? "Unmute app audio" : "Mute app audio")"
+            aria-pressed="@_isAudioMuted">
+        <span aria-hidden="true">@(_isAudioMuted ? "🔇" : "🔊")</span>
+    </button>
+    <button class="reset-button" @onclick="ResetAppAsync" title="Reset all settings" aria-label="Reset all settings">
+        Reset
+    </button>
 </div>
+
+@if (_showConnectInstrumentModal)
+{
+    <div class="instrument-modal-backdrop" role="presentation" @onclick="CloseConnectInstrumentModal">
+        <div class="instrument-modal" role="dialog" aria-modal="true" aria-labelledby="instrument-modal-title" @onclick:stopPropagation="true">
+            <div class="instrument-modal-header">
+                <div>
+                    <h2 id="instrument-modal-title">Connect an Instrument</h2>
+                    <p>Select what you are playing and how it is being recorded.</p>
+                </div>
+                <button class="instrument-modal-close" @onclick="CloseConnectInstrumentModal" aria-label="Close connect instrument dialog">✕</button>
+            </div>
+
+            <div class="instrument-modal-section">
+                <label for="instrument-kind-select">Instrument</label>
+                <select id="instrument-kind-select" class="instrument-modal-select" @bind="_selectedInstrumentKind">
+                    @foreach (var instrument in InstrumentKinds)
+                    {
+                        <option value="@instrument">@instrument</option>
+                    }
+                </select>
+            </div>
+
+            <div class="instrument-modal-section">
+                <label for="recording-method-select">Recording method</label>
+                <select id="recording-method-select" class="instrument-modal-select" @bind="_selectedRecordingMethod">
+                    @foreach (var method in RecordingMethods)
+                    {
+                        <option value="@method">@method</option>
+                    }
+                </select>
+                @if (_selectedRecordingMethod == "Audio Interface")
+                {
+                    <p class="instrument-modal-help">Your browser may still call this microphone access. Audio interfaces, USB inputs, and line inputs are included in that permission.</p>
+                }
+            </div>
+
+            <div class="instrument-modal-actions">
+                <button class="instrument-modal-secondary" @onclick="CloseConnectInstrumentModal">Cancel</button>
+                <button class="instrument-modal-primary" @onclick="ConnectInstrumentAsync">Connect</button>
+            </div>
+        </div>
+    </div>
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private static readonly string[] InstrumentKinds = ["Voice", "Guitar", "Piano"];
+    private static readonly string[] RecordingMethods = ["Microphone", "Audio Interface"];
+
+    private bool _isAudioMuted;
+    private bool _isAnalogInputEnabled;
+    private bool _showConnectInstrumentModal;
+    private string _selectedInstrumentKind = InstrumentKinds[0];
+    private string _selectedRecordingMethod = RecordingMethods[0];
+    private string? _connectedInstrumentKind;
+
+    private string InstrumentConnectionButtonLabel => _isAnalogInputEnabled && !string.IsNullOrWhiteSpace(_connectedInstrumentKind)
+        ? $"{ConnectedInstrumentDisplayName(_connectedInstrumentKind)} Connected"
+        : "Connect an Instrument";
+
+    private void OpenConnectInstrumentModal()
+    {
+        _showConnectInstrumentModal = true;
+    }
+
+    private void CloseConnectInstrumentModal()
+    {
+        _showConnectInstrumentModal = false;
+    }
+
+    private async Task ConnectInstrumentAsync()
+    {
+        _isAnalogInputEnabled = await AudioInput.StartAsync(JS, _selectedRecordingMethod);
+        if (_isAnalogInputEnabled)
+        {
+            _connectedInstrumentKind = _selectedInstrumentKind;
+            InstrumentConnections.Connect(_selectedInstrumentKind, _selectedRecordingMethod);
+            CloseConnectInstrumentModal();
+        }
+    }
+
+    private static string ConnectedInstrumentDisplayName(string instrumentKind) => instrumentKind switch
+    {
+        "Guitar" => "Electric Guitar",
+        _ => instrumentKind
+    };
+
+    private async Task ToggleAudioMuteAsync()
+    {
+        _isAudioMuted = !_isAudioMuted;
+        await JS.InvokeVoidAsync("fretlessAudio.setMuted", _isAudioMuted);
+    }
+
+    private async Task ResetAppAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", "fretless.spiralWheel.settings.v1");
+        }
+        catch
+        {
+        }
+
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+    }
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = default!;
+}
