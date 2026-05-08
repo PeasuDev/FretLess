@@ -1,0 +1,23 @@
+<section class="library-detail" aria-live="polite">
+    @if (Entry is null)
+    {
+        <div class="library-detail__placeholder">
+            <h1 class="library-detail__placeholder-title">Component Library</h1>
+            <p class="library-detail__placeholder-text">
+                Select an entry from the sidebar to view its variants and controls.
+            </p>
+            <p class="library-detail__placeholder-text library-detail__placeholder-hint">
+                The library is empty until Phase 2 of the rollout adds component demos.
+                See <code>docs/superpowers/specs/2026-05-07-component-library-design.md</code>.
+            </p>
+        </div>
+    }
+    else
+    {
+        <DynamicComponent Type="@Entry.DemoType" />
+    }
+</section>
+
+@code {
+    [Parameter] public LibraryEntry? Entry { get; set; }
+}
