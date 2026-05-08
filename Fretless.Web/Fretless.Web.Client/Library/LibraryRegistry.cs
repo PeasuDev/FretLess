@@ -70,6 +70,13 @@ public static class LibraryRegistry
             DemoType: typeof(StringTuningRowDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/StringTuningRow.razor"),
         new(
+            Slug: "note-circle-view",
+            Title: "NoteCircleView",
+            Description: "Stateless 12-segment circle-of-fifths SVG wheel; selection, key-role coloring, MIDI highlights, complementary outline driven by params.",
+            Group: LibraryGroup.Primitives,
+            DemoType: typeof(NoteCircleViewDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Primitives/NoteCircleView.razor"),
+        new(
             Slug: "stability-cluster",
             Title: "StabilityCluster",
             Description: "Stateless SVG bubble cluster encoding per-note consonance + pairwise relationships.",

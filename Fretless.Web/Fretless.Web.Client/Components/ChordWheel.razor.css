@@ -13,22 +13,6 @@
     flex-shrink: 0;
 }
 
-.chord-wheel {
-    width: 100%;
-    height: 100%;
-    transition: opacity 0.2s;
-}
-
-.note-segment path,
-.chord-segment path {
-    transition: opacity 0.15s;
-}
-
-.note-segment:hover path,
-.chord-segment:hover path {
-    opacity: 0.8 !important;
-}
-
 .chord-info {
     display: flex;
     align-items: center;

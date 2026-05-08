@@ -1,0 +1,13 @@
+.note-circle-view {
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.2s;
+}
+
+.note-segment path {
+    transition: opacity 0.15s;
+}
+
+.note-segment:hover path {
+    opacity: 0.8 !important;
+}

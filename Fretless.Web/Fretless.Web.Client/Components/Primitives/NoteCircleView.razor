@@ -1,0 +1,146 @@
+@namespace Fretless.Web.Client.Components.Primitives
+
+<svg viewBox="-1 -1 2 2"
+     xmlns="http://www.w3.org/2000/svg"
+     class="note-circle-view"
+     role="img"
+     aria-label="Circle of fifths note wheel">
+    @{
+        var selectedCofIdx = SelectedNote is null ? -1 : Array.IndexOf(MusicTheoryService.CircleOfFifths, SelectedNote);
+        var complementaryIdx = ShowComplementary && selectedCofIdx >= 0 ? (selectedCofIdx + 6) % 12 : -1;
+    }
+
+    @* Outer ring: 12 segments *@
+    @foreach (var (note, i) in MusicTheoryService.CircleOfFifths.Select((n, idx) => (n, idx)))
+    {
+        var isSelected = SelectedNote == note;
+        var isComplementary = i == complementaryIdx;
+        var role = KeyRoles?.GetValueOrDefault(i);
+        var isDiatonic = role is not null;
+        var isNonDiatonic = KeyRoles is not null && !isDiatonic;
+
+        var path = OuterArcPath(i, 12, OuterR, InnerR);
+        var labelPos = ArcMidpoint(i, 12, (OuterR + InnerR) / 2.0);
+        var rolePos = ArcMidpoint(i, 12, OuterR - 0.06);
+
+        var fill = isSelected ? "#ffffff"
+                 : isDiatonic ? role!.Color
+                 : NoteSegmentColor(i);
+        var opacity = isSelected || isComplementary ? "1"
+                    : isDiatonic ? "0.95"
+                    : isNonDiatonic ? "0.22"
+                    : "0.82";
+        var stroke = isComplementary ? "#ff6ec7" : "#111111";
+        var strokeW = isComplementary ? "0.018" : "0.008";
+
+        <g class="note-segment"
+           @onclick="() => OnNoteClicked.InvokeAsync(note)"
+           style="cursor:pointer">
+            <path d="@path"
+                  fill="@fill"
+                  stroke="@stroke"
+                  stroke-width="@strokeW"
+                  opacity="@opacity" />
+            @SvgText(labelPos.X, labelPos.Y, "0.065",
+                $"fill:{(isSelected ? "#111111" : "#ffffff")};pointer-events:none;font-family:'Helvetica Neue',sans-serif;font-weight:bold",
+                MusicTheoryService.DisplayName(note))
+            @if (isDiatonic && !isSelected)
+            {
+                @SvgText(rolePos.X, rolePos.Y, "0.042",
+                    "fill:#ffffff;pointer-events:none;font-family:'Helvetica Neue',sans-serif;font-weight:600;opacity:0.9",
+                    role!.Roman)
+            }
+        </g>
+    }
+
+    @* Inner ring marker for the selected note *@
+    @if (selectedCofIdx >= 0)
+    {
+        var path = OuterArcPath(selectedCofIdx, 12, InnerR, CentreR + 0.02);
+        <path d="@path" fill="rgba(255,255,255,0.04)" stroke="#ffffff" stroke-width="0.003" opacity="0.3" />
+    }
+
+    @* MIDI active note highlights on the outer ring *@
+    @if (MidiActiveSemitones is { Count: > 0 })
+    {
+        @foreach (var semitone in MidiActiveSemitones)
+        {
+            var cofIdx = MidiSemitoneToCofIndex(semitone);
+            if (cofIdx >= 0)
+            {
+                var path = OuterArcPath(cofIdx, 12, OuterR, InnerR);
+                <path d="@path" fill="rgba(255,255,255,0.22)" stroke="#ffffff" stroke-width="0.018"
+                      style="pointer-events:none" />
+            }
+        }
+    }
+</svg>
+
+@code {
+    [Parameter] public string? SelectedNote { get; set; }
+    [Parameter] public IReadOnlyDictionary<int, MusicTheoryService.NoteRole>? KeyRoles { get; set; }
+    [Parameter] public IReadOnlyCollection<int>? MidiActiveSemitones { get; set; }
+    [Parameter] public bool ShowComplementary { get; set; }
+    [Parameter] public EventCallback<string> OnNoteClicked { get; set; }
+
+    private const double OuterR = 0.96;
+    private const double InnerR = 0.56;
+    private const double CentreR = 0.13;
+
+    private static string NoteSegmentColor(int index) =>
+        MusicTheoryService.NoteColor(index, saturation: 55, lightness: 38);
+
+    /// <summary>Maps a chromatic semitone (0–11) to its Circle of Fifths index, or -1 if not found.</summary>
+    private static int MidiSemitoneToCofIndex(int semitone)
+    {
+        var label = semitone switch
+        {
+            0  => "C",
+            1  => "Db",
+            2  => "D",
+            3  => "Eb",
+            4  => "E",
+            5  => "F",
+            6  => "F#",
+            7  => "G",
+            8  => "Ab",
+            9  => "A",
+            10 => "Bb",
+            11 => "B",
+            _  => ""
+        };
+        return Array.IndexOf(MusicTheoryService.CircleOfFifths, label);
+    }
+
+    private static string OuterArcPath(int segIndex, int total, double rOuter, double rInner)
+    {
+        var gap = 0.018;
+        var startAngle = segIndex * (2 * Math.PI / total) - Math.PI / 2 + gap / 2;
+        var endAngle = (segIndex + 1) * (2 * Math.PI / total) - Math.PI / 2 - gap / 2;
+
+        var x1 = Math.Cos(startAngle) * rOuter;
+        var y1 = Math.Sin(startAngle) * rOuter;
+        var x2 = Math.Cos(endAngle) * rOuter;
+        var y2 = Math.Sin(endAngle) * rOuter;
+        var x3 = Math.Cos(endAngle) * rInner;
+        var y3 = Math.Sin(endAngle) * rInner;
+        var x4 = Math.Cos(startAngle) * rInner;
+        var y4 = Math.Sin(startAngle) * rInner;
+
+        var largeArc = (endAngle - startAngle > Math.PI) ? 1 : 0;
+
+        return $"M {x1.I()} {y1.I()} " +
+               $"A {rOuter.I()} {rOuter.I()} 0 {largeArc} 1 {x2.I()} {y2.I()} " +
+               $"L {x3.I()} {y3.I()} " +
+               $"A {rInner.I()} {rInner.I()} 0 {largeArc} 0 {x4.I()} {y4.I()} Z";
+    }
+
+    private static (double X, double Y) ArcMidpoint(int segIndex, int total, double r)
+    {
+        var mid = (segIndex + 0.5) * (2 * Math.PI / total) - Math.PI / 2;
+        return (Math.Cos(mid) * r, Math.Sin(mid) * r);
+    }
+
+    private static MarkupString SvgText(double x, double y, string fontSize, string style, string? content) =>
+        new($"<text x=\"{x.I()}\" y=\"{y.I()}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"{fontSize}\" style=\"{style}\">{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(content ?? string.Empty)}</text>");
+}

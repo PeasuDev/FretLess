@@ -1,0 +1,106 @@
+@namespace Fretless.Web.Client.Library.Demos.Primitives
+
+<LibraryFrame Title="NoteCircleView"
+              Description="Stateless 12-segment circle-of-fifths SVG wheel. Selection, key-role coloring (diatonic vs non-diatonic), MIDI active highlighting, and complementary-tritone outline are all driven by parameters; the only output is OnNoteClicked. Pure renderer — no service injection, no audio, no MIDI subscription."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Primitives/NoteCircleView.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Default — no selection</h3>
+            <div class="variant-card__render">
+                <div style="width:240px;height:240px;">
+                    <NoteCircleView />
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>&lt;NoteCircleView /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Selected C — diatonic chords colored</h3>
+            <div class="variant-card__render">
+                <div style="width:240px;height:240px;">
+                    <NoteCircleView SelectedNote="C"
+                                    KeyRoles="@MusicTheoryService.GetKeyRelationships(0)" />
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>&lt;NoteCircleView SelectedNote="C" KeyRoles="@@GetKeyRelationships(0)" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Selected G + complementary tritone outline</h3>
+            <div class="variant-card__render">
+                <div style="width:240px;height:240px;">
+                    <NoteCircleView SelectedNote="G"
+                                    KeyRoles="@MusicTheoryService.GetKeyRelationships(1)"
+                                    ShowComplementary="true" />
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>&lt;NoteCircleView SelectedNote="G" KeyRoles="…" ShowComplementary="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">MIDI active — C E G ringed in white</h3>
+            <div class="variant-card__render">
+                <div style="width:240px;height:240px;">
+                    <NoteCircleView MidiActiveSemitones="@(new HashSet<int> { 0, 4, 7 })" />
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>&lt;NoteCircleView MidiActiveSemitones="[0,4,7]" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Selected:
+                <select @bind="_selectedKey">
+                    <option value="">(none)</option>
+                    @foreach (var note in MusicTheoryService.CircleOfFifths)
+                    {
+                        <option value="@note">@MusicTheoryService.DisplayName(note)</option>
+                    }
+                </select>
+            </label>
+            <label>
+                <input type="checkbox" checked="@_showComplementary" @onchange="e => _showComplementary = (bool?)e.Value ?? false" />
+                Show complementary
+            </label>
+            <span>Last clicked: <strong>@(_lastClicked ?? "(none)")</strong></span>
+            <span>Click count: <strong>@_clickCount</strong></span>
+        </div>
+        <div class="playground__render" style="display:flex;justify-content:center;">
+            <div style="width:280px;height:280px;">
+                <NoteCircleView SelectedNote="@PlaygroundSelected"
+                                KeyRoles="@PlaygroundKeyRoles"
+                                ShowComplementary="@_showComplementary"
+                                OnNoteClicked="OnPlaygroundClicked" />
+            </div>
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private string _selectedKey = "";
+    private bool _showComplementary;
+    private string? _lastClicked;
+    private int _clickCount;
+
+    private string? PlaygroundSelected => string.IsNullOrEmpty(_selectedKey) ? null : _selectedKey;
+
+    private IReadOnlyDictionary<int, MusicTheoryService.NoteRole>? PlaygroundKeyRoles
+    {
+        get
+        {
+            if (PlaygroundSelected is null) return null;
+            var idx = Array.IndexOf(MusicTheoryService.CircleOfFifths, PlaygroundSelected);
+            return idx >= 0 ? MusicTheoryService.GetKeyRelationships(idx) : null;
+        }
+    }
+
+    private void OnPlaygroundClicked(string note)
+    {
+        _lastClicked = note;
+        _clickCount++;
+        _selectedKey = _selectedKey == note ? "" : note;
+    }
+}
