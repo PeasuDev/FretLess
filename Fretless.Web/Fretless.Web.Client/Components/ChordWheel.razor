@@ -1,5 +1,7 @@
 @using Fretless.Web.Client.Models
 @inject IJSRuntime JS
+@inject MidiService Midi
+@implements IAsyncDisposable
 
 <div class="chord-wheel-container">
     <div class="chord-wheel-svg-wrapper">
@@ -37,7 +39,7 @@
                         : isDiatonic ? "0.95"
                         : isNonDiatonic ? "0.22"
                         : "0.82";
-            var stroke = isComplementary ? "#ff6ec7" : "#1a1a2e";
+            var stroke = isComplementary ? "#ff6ec7" : "#111111";
             var strokeW = isComplementary ? "0.018" : "0.008";
 
             <g class="note-segment @segClass"
@@ -49,7 +51,7 @@
                       stroke-width="@strokeW"
                       opacity="@opacity" />
                 @SvgText(labelPos.X, labelPos.Y, "0.065",
-                    $"fill:{(isSelected ? "#1a1a2e" : "#ffffff")};pointer-events:none;font-family:'Helvetica Neue',sans-serif;font-weight:bold",
+                    $"fill:{(isSelected ? "#111111" : "#ffffff")};pointer-events:none;font-family:'Helvetica Neue',sans-serif;font-weight:bold",
                     MusicTheoryService.DisplayName(note))
                 @if (isDiatonic && !isSelected)
                 {
@@ -67,7 +69,20 @@
             var path = OuterArcPath(noteIdx, 12, InnerR, CentreR + 0.02);
             <path d="@path" fill="rgba(255,255,255,0.04)" stroke="#ffffff" stroke-width="0.003" opacity="0.3" />
         }
-
+        @* MIDI active note highlights on the outer ring *@
+        @if (_midiActiveSemitones.Count > 0)
+        {
+            @foreach (var semitone in _midiActiveSemitones)
+            {
+                var cofIdx = MidiSemitoneToCofIndex(semitone);
+                if (cofIdx >= 0)
+                {
+                    var path = OuterArcPath(cofIdx, 12, OuterR, InnerR);
+                    <path d="@path" fill="rgba(255,255,255,0.22)" stroke="#ffffff" stroke-width="0.018"
+                          style="pointer-events:none" />
+                }
+            }
+        }
 
     </svg>
     </div>
@@ -144,6 +159,7 @@
 
     private string? SelectedNote { get; set; }
     private NoteChord? ActiveChord { get; set; }
+    private readonly HashSet<int> _midiActiveSemitones = [];
 
     // Index of the note diametrically opposite on the circle of fifths (6 steps = tritone away).
     // Returns -1 when no chord is active or the selected note is not on the circle.
@@ -189,6 +205,58 @@
     private static string NoteSegmentColor(int index)
     {
         return MusicTheoryService.NoteColor(index, saturation: 55, lightness: 38);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Midi.NoteOn  += OnMidiNoteOn;
+            Midi.NoteOff += OnMidiNoteOff;
+            await Midi.InitAsync(JS);
+        }
+    }
+
+    private void OnMidiNoteOn(int midi)
+    {
+        _midiActiveSemitones.Add(midi % 12);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnMidiNoteOff(int midi)
+    {
+        _midiActiveSemitones.Remove(midi % 12);
+        InvokeAsync(StateHasChanged);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        Midi.NoteOn  -= OnMidiNoteOn;
+        Midi.NoteOff -= OnMidiNoteOff;
+        return ValueTask.CompletedTask;
+    }
+
+    /// <summary>Maps a chromatic semitone (0–11) to its Circle of Fifths index, or -1 if not found.</summary>
+    private static int MidiSemitoneToCofIndex(int semitone)
+    {
+        // Chromatic semitone → note name (sharps preferred) → match against CircleOfFifths
+        var label = semitone switch
+        {
+            0  => "C",
+            1  => "Db",
+            2  => "D",
+            3  => "Eb",
+            4  => "E",
+            5  => "F",
+            6  => "F#",
+            7  => "G",
+            8  => "Ab",
+            9  => "A",
+            10 => "Bb",
+            11 => "B",
+            _  => ""
+        };
+        return Array.IndexOf(MusicTheoryService.CircleOfFifths, label);
     }
 
     private static string OuterArcPath(int segIndex, int total, double rOuter, double rInner)

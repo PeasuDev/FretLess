@@ -1,0 +1,95 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="motion-graphics" aria-label="Animated motion graphics preview">
+    <canvas @ref="_canvasRef" class="motion-graphics-canvas"></canvas>
+    <div class="motion-graphics-overlay">
+        <span class="motion-graphics-eyebrow">Browser motion scaffold</span>
+        <strong>@Title</strong>
+        @if (!string.IsNullOrWhiteSpace(Description))
+        {
+            <span>@Description</span>
+        }
+    </div>
+</div>
+
+@code {
+    private ElementReference _canvasRef;
+    private IJSObjectReference? _module;
+    private MotionGraphicsOptions? _lastOptions;
+
+    [Parameter]
+    public string Title { get; set; } = "Canvas 2D + requestAnimationFrame";
+
+    [Parameter]
+    public string? Description { get; set; } = "A browser-owned animation loop for smooth procedural graphics.";
+
+    [Parameter]
+    public string AccentColor { get; set; } = "#00e5ff";
+
+    [Parameter]
+    public string SecondaryColor { get; set; } = "#ffd700";
+
+    [Parameter]
+    public int ParticleCount { get; set; } = 72;
+
+    [Parameter]
+    public double Speed { get; set; } = 1;
+
+    [Parameter]
+    public double RadiusScale { get; set; } = 1;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Fretless.Web.Client/js/motionGraphics.js");
+            _lastOptions = CreateOptions();
+            await _module.InvokeVoidAsync("start", _canvasRef, _lastOptions);
+            return;
+        }
+
+        if (_module is not null)
+        {
+            var options = CreateOptions();
+            if (options != _lastOptions)
+            {
+                _lastOptions = options;
+                await _module.InvokeVoidAsync("update", _canvasRef, options);
+            }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _module.InvokeVoidAsync("stop", _canvasRef);
+            await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
+    private MotionGraphicsOptions CreateOptions() => new(
+        AccentColor,
+        SecondaryColor,
+        "rgba(0, 0, 0, 0)",
+        ParticleCount,
+        Speed,
+        RadiusScale);
+
+    private sealed record MotionGraphicsOptions(
+        string AccentColor,
+        string SecondaryColor,
+        string BackgroundColor,
+        int ParticleCount,
+        double Speed,
+        double RadiusScale);
+}

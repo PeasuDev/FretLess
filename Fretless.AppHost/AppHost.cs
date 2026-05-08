@@ -1,5 +1,5 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-builder.AddProject<Projects.MauiApp1>("mauiapp1");
+builder.AddProject<Projects.Fretless_Web>("fretless-web");
 
 builder.Build().Run();

@@ -1,5 +1,7 @@
 @using Fretless.Web.Client.Models
 @inject IJSRuntime JS
+@inject MidiService Midi
+@implements IAsyncDisposable
 
 <div class="fretboard-container">
     <div class="fretboard-header">
@@ -22,6 +24,8 @@
                 </button>
                 @foreach (var (degree, index) in GetScaleDegrees())
                 {
+                    if (index == 7) continue;
+
                     var degreeCapture = degree;
                     <button class="fretboard-position-btn @(SelectedPosition == degree ? "active" : "")" 
                             @onclick="() => SelectPosition(degreeCapture)">
@@ -45,7 +49,7 @@
                @oninput="OnVolumeInput" />
         <span class="fretboard-volume-value">@((int)Math.Round(_volume * 100))%</span>
     </div>
-    <svg viewBox="0 0 @(FretCount * FretWidth + NutWidth + BtnAreaWidth) @(StringCount * StringSpacing + 20)"
+    <svg viewBox="0 -20 @(FretCount * FretWidth + NutWidth + BtnAreaWidth) @(StringCount * StringSpacing + 40)"
          xmlns="http://www.w3.org/2000/svg"
          class="fretboard"
          aria-label="@StringCount-string fretboard — @(Tuning?.Name ?? "Standard")">
@@ -57,17 +61,25 @@
             var cy = 10 + (StringCount - 1 - si) * StringSpacing + StringSpacing / 2.0;
             var label = TuningService.MidiLabel(OpenStringNotes[si]);
             // Note label
-            @SvgText(BtnAreaWidth / 2.0, cy, "8", "font-family:'Helvetica Neue',sans-serif;fill:#ddddf0;font-weight:600", label)
+            @SvgText(BtnAreaWidth / 2.0, cy, "8", "font-family:'Helvetica Neue',sans-serif;fill:#dddddd;font-weight:600", label)
             // ▲ up
             <g @onclick="() => ShiftString(si, +1)" style="cursor:pointer" class="tuning-btn">
                 <rect x="2" y="@((cy - StringSpacing/2.0 + 1).ToInvariant())" width="@((BtnAreaWidth/2.0 - 3).ToInvariant())" height="@((StringSpacing/2.0 - 2).ToInvariant())" rx="2" fill="rgba(255,255,255,0.06)" />
-                @SvgText(BtnAreaWidth / 4.0, cy - StringSpacing / 4.0, "7", "font-family:'Helvetica Neue',sans-serif;fill:#aaaacc;pointer-events:none", "▲")
+                @SvgText(BtnAreaWidth / 4.0, cy - StringSpacing / 4.0, "7", "font-family:'Helvetica Neue',sans-serif;fill:#aaaaaa;pointer-events:none", "▲")
             </g>
             // ▼ down
             <g @onclick="() => ShiftString(si, -1)" style="cursor:pointer" class="tuning-btn">
                 <rect x="2" y="@(cy.ToInvariant())" width="@((BtnAreaWidth/2.0 - 3).ToInvariant())" height="@((StringSpacing/2.0 - 2).ToInvariant())" rx="2" fill="rgba(255,255,255,0.06)" />
-                @SvgText(BtnAreaWidth / 4.0, cy + StringSpacing / 4.0, "7", "font-family:'Helvetica Neue',sans-serif;fill:#aaaacc;pointer-events:none", "▼")
+                @SvgText(BtnAreaWidth / 4.0, cy + StringSpacing / 4.0, "7", "font-family:'Helvetica Neue',sans-serif;fill:#aaaaaa;pointer-events:none", "▼")
             </g>
+        }
+
+        @* Fret numbers *@
+        @foreach (var fret in new[] { 3, 5, 7, 9, 12 })
+        {
+            if (fret > FretCount) continue;
+            var labelX = BtnAreaWidth + NutWidth + (fret - 0.5) * FretWidth;
+            @SvgText(labelX, -8, "9", "font-family:'Helvetica Neue',sans-serif;fill:#aaaaaa;font-weight:600", fret.ToString())
         }
 
         @* Fretboard body *@
@@ -114,9 +126,53 @@
                   stroke-width="@thickness.ToInvariant()" />
         }
 
+        @* Clickable fret positions (no scale selected) *@
+        @if (InternalScale is null)
+        {
+            <g class="fretboard-hit-targets">
+            @for (int s = 0; s < StringCount; s++)
+            {
+                for (int f = 0; f <= FretCount; f++)
+                {
+                    var cx = BtnAreaWidth + (f == 0 ? NutWidth / 2.0 : NutWidth + (f - 0.5) * FretWidth);
+                    var cy = 10 + (StringCount - 1 - s) * StringSpacing + StringSpacing / 2.0;
+                    var fLocal = f; var sLocal = s;
+                    var key = (sLocal, fLocal);
+                    <rect x="@((cx - FretWidth / 2.0).ToInvariant())" y="@((cy - StringSpacing / 2.0).ToInvariant())"
+                          width="@FretWidth.ToInvariant()" height="@StringSpacing.ToInvariant()"
+                          fill="transparent" style="cursor:pointer"
+                          @onclick="() => ToggleManualDot(sLocal, fLocal)" />
+                }
+            }
+            </g>
+
+            <g class="fretboard-note-dots">
+            @for (int s = 0; s < StringCount; s++)
+            {
+                for (int f = 0; f <= FretCount; f++)
+                {
+                    var cx = BtnAreaWidth + (f == 0 ? NutWidth / 2.0 : NutWidth + (f - 0.5) * FretWidth);
+                    var cy = 10 + (StringCount - 1 - s) * StringSpacing + StringSpacing / 2.0;
+                    var fLocal = f; var sLocal = s;
+                    var key = (sLocal, fLocal);
+                    @if (_manualDots.Contains(key))
+                    {
+                        <g @onclick="() => ToggleManualDot(sLocal, fLocal)" style="cursor:pointer">
+                            <circle cx="@cx.ToInvariant()" cy="@cy.ToInvariant()" r="7.75"
+                                    fill="#1b1b1b" />
+                            <circle cx="@cx.ToInvariant()" cy="@cy.ToInvariant()" r="7"
+                                    fill="white" stroke="#ffffff" stroke-width="1" />
+                        </g>
+                    }
+                }
+            }
+            </g>
+        }
+
         @* Scale overlay — dots for every note in the selected scale *@
         @if (InternalScale is not null)
         {
+            <g class="fretboard-note-dots">
             @for (int s = 0; s < StringCount; s++)
             {
                 for (int f = 0; f <= FretCount; f++)
@@ -130,20 +186,22 @@
                     var isRoot  = noteIdx == InternalScale.RootIndex;
                     var cx      = BtnAreaWidth + (f == 0 ? NutWidth / 2.0 : NutWidth + (f - 0.5) * FretWidth);
                     var cy      = 10 + (StringCount - 1 - s) * StringSpacing + StringSpacing / 2.0;
-                    var fill    = isRoot ? "#FFD700" : "rgba(255,255,255,0.18)";
-                    var stroke  = isRoot ? "#1a1a2e" : "rgba(255,255,255,0.35)";
+                    var fill    = isRoot ? "#FFD700" : "#ffffff";
+                    var stroke  = isRoot ? "#111111" : "#ffffff";
                     var label   = MusicTheoryService.ScaleDegreeLabel(noteIdx, InternalScale.RootIndex);
                     var fLocal  = f; var sLocal = s;
                     <g @onclick="() => PlayMidi(OpenStringNotes[sLocal] + fLocal)" style="cursor:pointer" class="scale-dot @(isRoot ? "scale-dot--root" : "")">
+                        <circle cx="@cx.ToInvariant()" cy="@cy.ToInvariant()" r="7.75"
+                                fill="#1b1b1b" />
                         <circle cx="@cx.ToInvariant()" cy="@cy.ToInvariant()" r="7"
-                                fill="@fill" stroke="@stroke" stroke-width="1"
-                                opacity="@(isRoot ? "0.92" : "0.55")" />
+                                fill="@fill" stroke="@stroke" stroke-width="1" />
                         @SvgText(cx, cy, "6",
-                            $"pointer-events:none;font-family:'Helvetica Neue',sans-serif;fill:{( isRoot ? "#1a1a2e" : "#ddddf0")};font-weight:700",
+                            $"pointer-events:none;font-family:'Helvetica Neue',sans-serif;fill:{( isRoot ? "#111111" : "#dddddd")};font-weight:700",
                             label)
                     </g>
                 }
             }
+            </g>
         }
 
         @* Chord dot overlays *@
@@ -156,8 +214,10 @@
                 var color = MusicTheoryService.MoodColor(ActiveChord.Type.Mood);
                 var dotLocal = dot;
                 <g @onclick="() => PlayMidi(OpenStringNotes[dotLocal.StringIndex] + dotLocal.Fret)" style="cursor:pointer">
+                    <circle cx="@cx.ToInvariant()" cy="@cy.ToInvariant()" r="9.75"
+                            fill="#1b1b1b" />
                     <circle cx="@cx.ToInvariant()" cy="@cy.ToInvariant()" r="9"
-                            fill="@color" stroke="#1a1a2e" stroke-width="1.5"
+                            fill="@color" stroke="#111111" stroke-width="1.5"
                             class="fret-dot" />
                     @SvgText(cx, cy, "8", "pointer-events:none;font-family:'Helvetica Neue',sans-serif;fill:white",
                         MusicTheoryService.NoteAtIndex(dot.NoteIndex))
@@ -181,7 +241,24 @@
             {
                 var cy = 10 + (StringCount - 1 - s) * StringSpacing + StringSpacing / 2.0;
                 var label = TuningService.MidiLabel(OpenStringNotes[s]);
-                @SvgText(BtnAreaWidth + NutWidth / 2.0, cy, "9", "font-family:'Helvetica Neue',sans-serif;fill:#aaaacc;opacity:0.7", label)
+                @SvgText(BtnAreaWidth + NutWidth / 2.0, cy, "9", "font-family:'Helvetica Neue',sans-serif;fill:#aaaaaa;opacity:0.7", label)
+            }
+        }
+        @* MIDI active note highlights *@
+        @if (_midiActiveNotes.Count > 0)
+        {
+            @for (int s = 0; s < StringCount; s++)
+            {
+                for (int f = 0; f <= FretCount; f++)
+                {
+                    var midi = OpenStringNotes[s] + f;
+                    if (!_midiActiveNotes.Contains(midi)) continue;
+                    var cx = BtnAreaWidth + (f == 0 ? NutWidth / 2.0 : NutWidth + (f - 0.5) * FretWidth);
+                    var cy = 10 + (StringCount - 1 - s) * StringSpacing + StringSpacing / 2.0;
+                    <circle cx="@cx.ToInvariant()" cy="@cy.ToInvariant()" r="10"
+                            fill="rgba(255,255,255,0.25)" stroke="#ffffff" stroke-width="2"
+                            style="pointer-events:none" />
+                }
             }
         }
     </svg>
@@ -207,10 +284,41 @@
 
     private ScaleOverlay? InternalScale { get; set; }
     private int? SelectedPosition { get; set; }
+    private readonly HashSet<(int S, int F)> _manualDots = [];
     private double _volume = 0.72;
     private bool _isMuted;
+    private readonly HashSet<int> _midiActiveNotes = [];
 
     private TuningPreset ActiveTuning => Tuning ?? TuningService.Standard;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Midi.NoteOn  += OnMidiNoteOn;
+            Midi.NoteOff += OnMidiNoteOff;
+            await Midi.InitAsync(JS);
+        }
+    }
+
+    private void OnMidiNoteOn(int midi)
+    {
+        _midiActiveNotes.Add(midi);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnMidiNoteOff(int midi)
+    {
+        _midiActiveNotes.Remove(midi);
+        InvokeAsync(StateHasChanged);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        Midi.NoteOn  -= OnMidiNoteOn;
+        Midi.NoteOff -= OnMidiNoteOff;
+        return ValueTask.CompletedTask;
+    }
 
     private const int FretCount = 12;
     private const double FretWidth = 52;
@@ -223,11 +331,46 @@
 
     private record FretDot(int StringIndex, int Fret, int NoteIndex);
 
-    private IReadOnlyList<FretDot> ChordDots =>
-        ActiveChord is null ? [] : BuildChordDots(ActiveChord);
+    private NoteChord? _cachedChord;
+    private TuningPreset? _cachedChordTuning;
+    private IReadOnlyList<FretDot> _cachedChordDots = [];
+    private IReadOnlyList<(string Symbol, int StringIndex)> _cachedOpenMuted = [];
 
-    private IReadOnlyList<(string Symbol, int StringIndex)> OpenMuted =>
-        ActiveChord is null ? [] : BuildOpenMuted(ActiveChord);
+    private void EnsureChordCacheCurrent()
+    {
+        if (ActiveChord is null)
+        {
+            if (_cachedChord is not null)
+            {
+                _cachedChord = null;
+                _cachedChordTuning = null;
+                _cachedChordDots = [];
+                _cachedOpenMuted = [];
+            }
+            return;
+        }
+
+        var tuning = ActiveTuning;
+        if (ReferenceEquals(_cachedChord, ActiveChord) && ReferenceEquals(_cachedChordTuning, tuning))
+        {
+            return;
+        }
+
+        _cachedChord = ActiveChord;
+        _cachedChordTuning = tuning;
+        _cachedChordDots = BuildChordDots(ActiveChord);
+        _cachedOpenMuted = BuildOpenMuted(ActiveChord);
+    }
+
+    private IReadOnlyList<FretDot> ChordDots
+    {
+        get { EnsureChordCacheCurrent(); return _cachedChordDots; }
+    }
+
+    private IReadOnlyList<(string Symbol, int StringIndex)> OpenMuted
+    {
+        get { EnsureChordCacheCurrent(); return _cachedOpenMuted; }
+    }
 
     private IReadOnlyList<FretDot> BuildChordDots(NoteChord chord)
     {
@@ -259,6 +402,14 @@
                 result.Add(("✕", s));
         }
         return result;
+    }
+
+    private async Task ToggleManualDot(int s, int f)
+    {
+        var key = (s, f);
+        if (!_manualDots.Remove(key))
+            _manualDots.Add(key);
+        await PlayMidi(OpenStringNotes[s] + f);
     }
 
     private async Task ShiftString(int stringIndex, int semitones)

@@ -5,5 +5,5 @@
   </Folder>
   <Project Path="Fretless.AppHost/Fretless.AppHost.csproj" />
   <Project Path="Fretless.ServiceDefaults/Fretless.ServiceDefaults.csproj" />
-  <Project Path="MauiApp1/MauiApp1.csproj" />
+  <Project Path="Fretless.Tests/Fretless.Tests.csproj" />
 </Solution>

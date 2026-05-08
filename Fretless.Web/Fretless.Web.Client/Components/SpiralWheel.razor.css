@@ -1,35 +1,183 @@
 /* ── Spiral Wheel ─────────────────────────────────────────── */
 .spiral-wheel-container {
-    position: relative;
+    display: flex;
+    flex-direction: row;
     width: 100%;
-    height: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+    padding-top: 4.75rem;
+}
+
+/* Left column — SVG + key indicator fills remaining space */
+.spiral-wheel-area {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
     overflow: hidden;
 }
 
-.spiral-key-selector {
+.spiral-key-indicator {
     position: absolute;
-    top: 0.85rem;
+    top: 0.6rem;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 21;
-    display: inline-flex;
+    z-index: 22;
+    display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.35rem 0.5rem;
+    justify-content: center;
+    gap: 0.18rem;
+    padding: 0.28rem 0.7rem;
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 999px;
-    background: rgba(13,13,26,0.68);
+    background: rgba(0,0,0,0.72);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 14px 50px rgba(0,0,0,0.22);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+    pointer-events: auto;
+}
+
+.spiral-key-indicator-note {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: rgba(232,232,240,0.42);
+    padding: 0.1rem 0.42rem;
+    border-radius: 999px;
+    min-width: 2.0rem;
+    text-align: center;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+    user-select: none;
+}
+
+.spiral-key-indicator-note:hover {
+    color: rgba(232,232,240,0.9);
+    background: rgba(255,255,255,0.08);
+}
+
+.spiral-key-indicator-note.selected {
+    color: rgba(232,232,240,0.88);
+}
+
+.spiral-key-indicator-note.root {
+    color: #ffd700;
+    font-size: 1.25rem;
+    font-weight: 900;
+    background: rgba(255,215,0,0.12);
+    border: 1px solid rgba(255,215,0,0.35);
+    padding: 0.1rem 0.65rem;
+    cursor: default;
+}
+
+.spiral-key-indicator-note.root:hover {
+    background: rgba(255,215,0,0.18);
+}
+
+.spiral-key-selector {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 24;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    min-height: 4.75rem;
+    max-width: none;
+    padding: 0.75rem 1rem 0.75rem 5rem;
+    margin-bottom: 0;
+    border-bottom: 1px solid rgba(255,215,0,0.24);
+    border-radius: 0;
+    background: rgba(0,0,0,0.84);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.28);
 }
 
 .spiral-key-selector label {
+    flex: 0 0 auto;
     color: rgba(232,232,240,0.82);
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+.spiral-scale-notes {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    gap: 0.65rem;
+    margin: -0.75rem 0 -0.75rem 0.35rem;
+    padding: 0.75rem 1.25rem 0.75rem 0.75rem;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: visible;
+    scrollbar-width: thin;
+}
+
+.spiral-scale-note-chip {
+    flex: 0 0 auto;
+    width: 3.25rem;
+    height: 3.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(232,232,240,0.9);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.1;
+    text-align: center;
+    transition: background 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s, transform 0.12s;
+}
+
+.spiral-scale-note-chip--playing {
+    background: #00e5ff;
+    border-color: #ffffff;
+    color: #061114;
+    box-shadow: 0 0 18px rgba(0,229,255,0.85);
+    transform: translateY(-1px) scale(1.08);
+}
+
+.spiral-play-scale-btn {
+    min-height: 2.5rem;
+    border: 1px solid rgba(255,215,0,0.52);
+    border-radius: 999px;
+    background: rgba(255,215,0,0.16);
+    color: #ffd700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0 0.8rem;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.spiral-play-scale-btn:hover:not(:disabled),
+.spiral-play-scale-btn:focus-visible:not(:disabled) {
+    background: rgba(255,215,0,0.24);
+    border-color: rgba(255,215,0,0.78);
+    color: #ffffff;
+}
+
+.spiral-play-scale-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
 }
 
 .spiral-progression-panel {
@@ -214,13 +362,76 @@
 }
 
 .spiral-right-panel-stack {
-    position: absolute;
-    top: 5.4rem;
-    right: 1rem;
-    z-index: 20;
-    width: min(24.5rem, calc(100vw - 2rem));
-    display: grid;
+    flex: 0 0 var(--spiral-right-panel-width, calc(50vw - 0.5rem));
+    width: var(--spiral-right-panel-width, calc(50vw - 0.5rem));
+    max-width: 80vw;
+    height: calc(100% - 0.75rem);
+    max-height: calc(100dvh - 5.65rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
+    display: flex;
+    flex-direction: column;
     gap: 0.7rem;
+    margin-top: 0.75rem;
+    padding: 0.9rem 0.85rem;
+    background: rgba(0,0,0,0.78);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-sizing: border-box;
+}
+
+.spiral-panel-resizer {
+    position: relative;
+    z-index: 12;
+    flex: 0 0 1rem;
+    align-self: stretch;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    cursor: col-resize;
+    padding: 0;
+    touch-action: none;
+}
+
+.spiral-panel-resizer::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1px;
+    height: 100%;
+    background: rgba(255,215,0,0.28);
+    transform: translate(-50%, -50%);
+}
+
+.spiral-panel-resizer::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.38rem;
+    height: clamp(3rem, 14vh, 7rem);
+    border-radius: 999px;
+    background: rgba(255,215,0,0.82);
+    transform: translate(-50%, -50%);
+    transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.spiral-panel-resizer:hover::after,
+.spiral-panel-resizer:focus-visible::after {
+    background: rgba(255,215,0,1);
+    box-shadow: 0 0 18px rgba(255,215,0,0.25);
+    transform: translate(-50%, -50%) scaleX(1.25);
+}
+
+.spiral-panel-resize-capture {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    cursor: col-resize;
+    touch-action: none;
 }
 
 .spiral-note-pool-panel {
@@ -229,13 +440,13 @@
     padding: 0.85rem 1rem;
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 14px;
-    background: rgba(13,13,26,0.68);
+    background: rgba(0,0,0,0.68);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 14px 50px rgba(0,0,0,0.22);
 }
 
-.spiral-note-pool-panel h2 {
+.spiral-note-pool-panel h2
     margin: 0 0 0.45rem;
     color: #FFD700;
     font-size: 0.8rem;
@@ -403,7 +614,7 @@
     align-items: center;
     padding: 0.12rem 0.45rem;
     border-radius: 999px;
-    color: #0f1220;
+    color: #111111;
     font-size: 0.7rem;
     letter-spacing: 0.03em;
     text-transform: uppercase;
@@ -423,7 +634,7 @@
     padding: 0.35rem;
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 999px;
-    background: rgba(13,13,26,0.68);
+    background: rgba(0,0,0,0.68);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 14px 50px rgba(0,0,0,0.22);
@@ -467,17 +678,22 @@
     font-size: 0.82rem;
     letter-spacing: 0.04em;
     font-weight: 800;
-    padding: 0 0.6rem;
-    text-align: center;
+    padding: 0 2.1rem 0 0.8rem;
+    text-align: left;
     cursor: pointer;
-    background: #ffffff;
+    appearance: none;
+    background-color: #ffffff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23000000' d='M1.18.22 5 4.04 8.82.22 10 1.4l-5 5-5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 0.65rem 0.4rem;
     border-color: #000000;
     color: #000000;
 }
 
 .spiral-control--key-select:hover,
 .spiral-control--scale-select:hover {
-    background: #ffffff;
+    background-color: #ffffff;
     border-color: #000000;
     color: #000000;
 }
@@ -521,14 +737,9 @@
     width: 100%;
     height: 100%;
     display: block;
-    cursor: grab;
     touch-action: none;
     user-select: none;
-}
-
-.spiral-svg.dragging,
-.spiral-svg:active {
-    cursor: grabbing;
+    object-fit: contain;
 }
 
 .spiral-segment path {
@@ -542,16 +753,18 @@
 .spiral-instrument-overlay-panel {
     position: static;
     width: 100%;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
     padding: 0.85rem 1rem;
-    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 14px;
-    background: rgba(13,13,26,0.68);
+    background: rgba(0,0,0,0.68);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 14px 50px rgba(0,0,0,0.22);
 }
 
-.spiral-instrument-overlay-panel h2 {
+.spiral-instrument-overlay-panel h2
     margin: 0 0 0.45rem;
     color: #FFD700;
     font-size: 0.8rem;
@@ -568,15 +781,20 @@
 }
 
 .spiral-instrument-overlay-stack {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 0.5rem;
 }
 
 .spiral-instrument-overlay-card {
     padding: 0.45rem;
-    border: 1px solid rgba(255,215,0,0.2);
+    border: 1px solid rgba(255,215,0,0.34);
     border-radius: 10px;
-    background: rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.065);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 12px 30px rgba(0,0,0,0.34);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .spiral-instrument-overlay-card h3 {
@@ -587,18 +805,291 @@
     text-transform: uppercase;
 }
 
-.spiral-mini-fretboard,
+.spiral-fretboard-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    margin-bottom: 0.35rem;
+}
+
+.spiral-fretboard-card-header h3 {
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.spiral-tuning-setup-btn {
+    border: 1px solid #000000;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #000000;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    min-height: 2.15rem;
+    padding: 0 0.75rem;
+    cursor: pointer;
+    white-space: nowrap;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.spiral-tuning-setup-btn:hover {
+    background: #f3f3f3;
+}
+
+.spiral-tuning-setup-btn.active {
+    background: #ffd700;
+    border-color: #b89a00;
+    color: #111;
+}
+
+.spiral-instrument-settings-btn {
+    border: 1px solid #000000;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #000000;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 800;
+    width: 2.15rem;
+    height: 2.15rem;
+    padding: 0;
+    cursor: pointer;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.spiral-instrument-settings-btn:hover {
+    background: #f3f3f3;
+}
+
+.spiral-instrument-settings-btn.active {
+    background: #ffd700;
+    border-color: #b89a00;
+    color: #111111;
+}
+
+.spiral-instrument-settings-panel {
+    margin-bottom: 0.35rem;
+    padding: 0.38rem 0.45rem;
+    border: 1px solid rgba(255,215,0,0.22);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    display: grid;
+    gap: 0.35rem;
+}
+
+.spiral-instrument-settings-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: rgba(255,255,255,0.86);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.spiral-instrument-settings-option input {
+    accent-color: #ffd700;
+}
+
+.spiral-instrument-card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1 1 auto;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.spiral-instrument-remove-btn {
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(255,255,255,0.55);
+    font: inherit;
+    font-size: 1rem;
+    width: 2.15rem;
+    height: 2.15rem;
+    padding: 0;
+    cursor: pointer;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.spiral-instrument-remove-btn:hover {
+    background: rgba(255,80,80,0.18);
+    border-color: rgba(255,80,80,0.5);
+    color: #ff6060;
+}
+
+.spiral-instrument-empty-slot {
+    border-color: rgba(255,215,0,0.26);
+    background: rgba(255,255,255,0.045);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spiral-instrument-empty-slot-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+.spiral-instrument-empty-label {
+    margin: 0;
+    color: rgba(232,232,240,0.68);
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.spiral-instrument-add-options {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+    justify-content: center;
+}
+
+.spiral-instrument-add-btn {
+    border: 1px solid rgba(255,215,0,0.4);
+    border-radius: 6px;
+    background: rgba(255,215,0,0.08);
+    color: #ffd700;
+    font: inherit;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 0.25rem 0.65rem;
+    cursor: pointer;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.spiral-instrument-add-btn:hover {
+    background: rgba(255,215,0,0.18);
+    border-color: #ffd700;
+}
+
+.spiral-mini-fretboard {
+    width: 100%;
+    display: block;
+    height: auto;
+}
+
+.spiral-fretboard-frame {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.5rem;
+    border: 1px solid rgba(255,215,0,0.28);
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.16));
+}
+
+.spiral-connected-instrument-card {
+    gap: 0.45rem;
+}
+
+.spiral-connected-signal {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.6rem;
+    border: 1px solid rgba(0,229,255,0.28);
+    border-radius: 10px;
+    background: radial-gradient(circle at top left, rgba(0,229,255,0.16), rgba(255,255,255,0.04) 62%);
+}
+
+.spiral-connected-note {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    gap: 0.15rem 0.55rem;
+}
+
+.spiral-connected-note-label {
+    color: rgba(255,255,255,0.82);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.spiral-connected-note-value {
+    color: #00e5ff;
+    font-size: 1.3rem;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    text-align: right;
+}
+
+.spiral-connected-note-detail {
+    grid-column: 1 / -1;
+    color: rgba(255,255,255,0.72);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.spiral-signal-waveform {
+    display: block;
+    width: 100%;
+    height: 2.6rem;
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.34), rgba(0,0,0,0.18));
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.spiral-signal-status {
+    color: rgba(255,255,255,0.72);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
 .spiral-mini-keys {
     width: 100%;
-    height: auto;
     display: block;
+    height: auto;
 }
 
 .spiral-overlay-position-row {
     margin-top: 0.4rem;
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 0.28rem;
+}
+
+.spiral-overlay-position-label {
+    margin-right: 0.18rem;
+    color: rgba(232,232,240,0.66);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.spiral-mini-fretboard circle:hover {
+    opacity: 1 !important;
+    filter: brightness(1.3);
+}
+
+.spiral-mini-keys rect:hover {
+    filter: brightness(0.85);
 }
 
 .spiral-overlay-position-btn {
@@ -642,22 +1133,14 @@
 .spiral-step-pattern-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem;
+    gap: 0.55rem;
 }
 
 .spiral-step-chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.9rem;
-    border: 1px solid #000000;
-    border-radius: 6px;
-    background: #ffffff;
-    color: #000000;
-    font-size: 0.66rem;
+    color: rgba(255,255,255,0.9);
+    font-size: 0.78rem;
     font-weight: 800;
     letter-spacing: 0.03em;
-    padding: 0.14rem 0.36rem;
 }
 
 .spiral-note:hover {
@@ -666,6 +1149,10 @@
 
 .spiral-note--selected {
     filter: brightness(1.15) drop-shadow(0 0 6px rgba(255, 215, 0, 0.7));
+}
+
+.spiral-note--playing {
+    filter: brightness(1.35) drop-shadow(0 0 10px rgba(0, 229, 255, 0.95));
 }
 
 .spiral-foundation-panel {
@@ -677,7 +1164,7 @@
     padding: 0.85rem 1rem;
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 14px;
-    background: rgba(13,13,26,0.68);
+    background: rgba(0,0,0,0.68);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 14px 50px rgba(0,0,0,0.22);
@@ -701,12 +1188,21 @@
 }
 
 @media (max-width: 760px) {
+    .spiral-wheel-container {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .spiral-wheel-area {
+        flex: 1 0 min(68vh, 42rem);
+    }
+
     .spiral-key-selector {
-        top: 0.65rem;
-        left: 0.75rem;
-        right: 0.75rem;
-        transform: none;
-        justify-content: center;
+        top: 0;
+        left: 0;
+        right: 0;
+        justify-content: flex-start;
+        padding-left: 4.25rem;
     }
 
     .spiral-toolbar {
@@ -737,10 +1233,16 @@
     }
 
     .spiral-right-panel-stack {
-        top: auto;
-        left: 0.75rem;
-        right: 0.75rem;
-        bottom: 6.5rem;
-        width: auto;
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: none;
+        max-height: none;
+        margin-top: 0;
+        border-left: 0;
+        border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .spiral-panel-resizer {
+        display: none;
     }
 }

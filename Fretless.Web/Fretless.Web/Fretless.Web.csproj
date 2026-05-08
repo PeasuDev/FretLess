@@ -7,12 +7,13 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Content Include="C:\Users\tpeas\OneDrive\Documents\Nautilus\Nautilus App.css" Link="Nautilus App.css" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <HotReloadEnabled>true</HotReloadEnabled>
+  </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Fretless.Web.Client\Fretless.Web.Client.csproj" />
+    <ProjectReference Include="..\..\Fretless.ServiceDefaults\Fretless.ServiceDefaults.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.7" />
   </ItemGroup>
 

@@ -1,12 +1,18 @@
+using Fretless.Web.Client;
 using Fretless.Web.Client.Pages;
 using Fretless.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+builder.Services.AddSingleton<MidiService>();
+builder.Services.AddSingleton<AudioInputNoteService>();
+builder.Services.AddSingleton<InstrumentConnectionService>();
 
 var app = builder.Build();
 
@@ -28,8 +34,9 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(Fretless.Web.Client._Imports).Assembly);
+
+app.MapDefaultEndpoints();
 
 app.Run();

@@ -41,13 +41,14 @@
                 </div>
             </div>
 
-            @for (int i = 0; i < _strings.Count; i++)
+            @for (int i = _strings.Count - 1; i >= 0; i--)
             {
                 var idx = i;
-                var stringNum = i + 1;
+                var stringNum = _strings.Count - i;
+                var gaugeThickness = 1.0 + (_strings.Count - 1 - i) * 0.35;
                 <div class="tuning-string-row">
                     <span class="string-num">@stringNum</span>
-                    <span class="string-icon" style="height: @(1.0 + idx * 0.35)px">━</span>
+                    <span class="string-icon" style="height: @(gaugeThickness)px">━</span>
                     <select class="string-note-select"
                             value="@_strings[idx]"
                             @onchange="e => OnStringNoteChanged(idx, e)">
@@ -59,6 +60,13 @@
                     <span class="string-note-label">@TuningService.MidiLabel(_strings[idx])</span>
                 </div>
             }
+
+            @if (Inline && OnDone.HasDelegate)
+            {
+                <div class="tuning-done-row">
+                    <button class="tuning-done-btn" @onclick="OnDoneClicked">Done</button>
+                </div>
+            }
         </div>
     }
 </div>
@@ -66,6 +74,7 @@
 @code {
     [Parameter] public TuningPreset Tuning { get; set; } = TuningService.Standard;
     [Parameter] public EventCallback<TuningPreset> TuningChanged { get; set; }
+    [Parameter] public EventCallback OnDone { get; set; }
     [Parameter] public bool Inline { get; set; } = false;
 
     private const int MaxStrings = 9;
@@ -76,6 +85,7 @@
 
     protected override void OnParametersSet()
     {
+        if (Inline && !IsExpanded) IsExpanded = true;
         if (_strings.SequenceEqual(Tuning.MidiNotes)) return;
         _strings = [..Tuning.MidiNotes];
         _selectedPresetName = Tuning.Name;
@@ -103,8 +113,8 @@
         if (int.TryParse(e.Value?.ToString(), out var midi))
         {
             _strings[index] = midi;
-            await NotifyChanged("Custom");
             _selectedPresetName = "Custom";
+            await NotifyChanged("Custom");
         }
     }
 
@@ -126,6 +136,8 @@
     }
 
     private void ToggleExpanded() => IsExpanded = !IsExpanded;
+
+    private async Task OnDoneClicked() => await OnDone.InvokeAsync();
 
     private async Task NotifyChanged(string name) =>
         await TuningChanged.InvokeAsync(new TuningPreset(name, [.._strings]));

@@ -7,7 +7,7 @@
 .panel-title {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #aaaacc;
+    color: #999999;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     margin: 0;
@@ -17,7 +17,7 @@
 .cb-placeholder {
     margin: 0;
     padding: 0.5rem 0;
-    color: rgba(170,170,204,0.45);
+    color: rgba(170,170,170,0.45);
     font-size: 0.78rem;
     font-style: italic;
 }
@@ -57,7 +57,7 @@
 
 .chord-description {
     font-size: 0.72rem;
-    color: rgba(200,200,220,0.6);
+    color: rgba(200,200,200,0.6);
     margin: 0;
     font-style: italic;
 }
@@ -73,7 +73,7 @@
 .notes-heading {
     font-size: 0.68rem;
     font-weight: 700;
-    color: rgba(170,170,204,0.55);
+    color: rgba(170,170,170,0.55);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     margin: 0;
@@ -143,5 +143,5 @@
 }
 
 .interval-label {
-    color: rgba(200,200,230,0.75);
+    color: rgba(200,200,200,0.75);
 }

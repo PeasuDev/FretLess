@@ -22,7 +22,7 @@
 .tuning-title {
     font-size: 0.9rem;
     font-weight: 600;
-    color: #aaaacc;
+    color: #999999;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin: 0;
@@ -31,7 +31,7 @@
 .tuning-toggle {
     background: transparent;
     border: 1px solid rgba(255,255,255,0.15);
-    color: #aaaacc;
+    color: #999999;
     border-radius: 4px;
     cursor: pointer;
     padding: 0.1rem 0.45rem;
@@ -52,8 +52,8 @@
 .tuning-preset-select,
 .string-note-select {
     flex: 1;
-    background: #1a1a2e;
-    color: #e8e8f0;
+    background: #111111;
+    color: #e8e8e8;
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: 6px;
     padding: 0.3rem 0.5rem;
@@ -75,7 +75,7 @@
 .tuning-reset-btn {
     background: transparent;
     border: 1px solid rgba(255,255,255,0.15);
-    color: #aaaacc;
+    color: #999999;
     border-radius: 6px;
     cursor: pointer;
     padding: 0.3rem 0.5rem;
@@ -111,7 +111,7 @@
 
 .tuning-label {
     font-size: 0.75rem;
-    color: #aaaacc;
+    color: #999999;
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -165,7 +165,7 @@
 
 .string-num {
     font-size: 0.7rem;
-    color: #666688;
+    color: #666666;
     width: 0.9rem;
     text-align: right;
     flex-shrink: 0;
@@ -186,4 +186,28 @@
     text-align: right;
     flex-shrink: 0;
     font-weight: 600;
+}
+
+.tuning-done-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.tuning-done-btn {
+    border: 1px solid #000000;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #000000;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.22rem 0.9rem;
+    cursor: pointer;
+}
+
+.tuning-done-btn:hover {
+    background: #f3f3f3;
 }

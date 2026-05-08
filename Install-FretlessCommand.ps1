@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Registers the 'fretless' command in your PowerShell profile.
+    Registers the 'fretless' and 'fret' commands in your PowerShell profile.
 
 .DESCRIPTION
-    Appends a function alias to $PROFILE so that typing 'fretless'
+    Appends functions to $PROFILE so that typing 'fret' or 'fretless'
     from any directory launches the Fretless web server.
     Run once; safe to re-run (idempotent).
 
@@ -11,14 +11,14 @@
     Because script execution may be disabled on the machine, run this
     installer by piping it through powershell.exe -ExecutionPolicy Bypass:
 
-        powershell.exe -ExecutionPolicy Bypass -File "C:\Users\tpeas\source\repos\Fretless\Install-FretlessCommand.ps1"
+        powershell.exe -ExecutionPolicy Bypass -File "C:\Users\tpeas\source\repos\PeasuDev\Nautilus\Install-FretlessCommand.ps1"
 #>
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 # Resolve the repo root whether the script is called with .\ or a full path.
-$RepoRoot   = if ($PSScriptRoot) { $PSScriptRoot } else { 'C:\Users\tpeas\source\repos\Fretless' }
+$RepoRoot   = if ($PSScriptRoot) { $PSScriptRoot } else { 'C:\Users\tpeas\source\repos\PeasuDev\Nautilus' }
 $ScriptPath = Join-Path $RepoRoot 'fretless.ps1'
 
 if (-not (Test-Path $ScriptPath)) {
@@ -52,8 +52,8 @@ $ProfileContent = Get-Content $PROFILE -Raw -ErrorAction SilentlyContinue
 
 $Marker = '# >>> fretless command'
 if ($ProfileContent -and $ProfileContent.Contains($Marker)) {
-    Write-Host "'fretless' is already registered in your PowerShell profile." -ForegroundColor Yellow
-    Write-Host "Open a new shell and type: fretless" -ForegroundColor Cyan
+    Write-Host "'fret' and 'fretless' are already registered in your PowerShell profile." -ForegroundColor Yellow
+    Write-Host "Open a new shell and type: fret" -ForegroundColor Cyan
     exit 0
 }
 
@@ -75,18 +75,19 @@ function fretless {
         `$(if (`$NoBrowser)  { '-NoBrowser' })  ``
         -Profile `$Profile
 }
+Set-Alias -Name fret -Value fretless
 # <<< fretless command <<<
 "@
 
 Add-Content -Path $PROFILE -Value $Snippet
 
 Write-Host ''
-Write-Host "  'fretless' registered in your PowerShell profile." -ForegroundColor Green
-Write-Host "  $PROFILE" -ForegroundColor Cyan
-Write-Host ''
-Write-Host '  Open a new PowerShell window (or run: . $PROFILE) then type:' -ForegroundColor DarkGray
-Write-Host '    fretless' -ForegroundColor White
-Write-Host '    fretless -Aspire' -ForegroundColor White
-Write-Host '    fretless -Profile https' -ForegroundColor White
-Write-Host '    fretless -NoBrowser' -ForegroundColor White
-Write-Host ''
+Write-Host "  'fret' and 'fretless' registered in your PowerShell profile." -ForegroundColor Green
+  Write-Host "  $PROFILE" -ForegroundColor Cyan
+  Write-Host ''
+  Write-Host '  Open a new PowerShell window (or run: . $PROFILE) then type:' -ForegroundColor DarkGray
+  Write-Host '    fret' -ForegroundColor White
+  Write-Host '    fret -Aspire' -ForegroundColor White
+  Write-Host '    fret -Profile https' -ForegroundColor White
+  Write-Host '    fret -NoBrowser' -ForegroundColor White
+  Write-Host ''

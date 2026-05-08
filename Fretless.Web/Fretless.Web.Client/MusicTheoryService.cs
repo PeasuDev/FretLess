@@ -15,6 +15,19 @@ public static class MusicTheoryService
         "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
     ];
 
+    // Same chromatic order, but spelt with flats (used by SpiralWheel and other UI surfaces).
+    public static readonly string[] ChromaticNotesFlat =
+    [
+        "C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"
+    ];
+
+    /// <summary>Returns a chromatic-note label for a (possibly negative or oversized) semitone.</summary>
+    public static string ChromaticLabel(int semitone, bool useFlats = false)
+    {
+        var normalized = ((semitone % 12) + 12) % 12;
+        return useFlats ? ChromaticNotesFlat[normalized] : ChromaticNotes[normalized];
+    }
+
     // Enharmonic display names aligned to circle of fifths
     private static readonly Dictionary<string, string> EnharmonicDisplay = new()
     {
@@ -153,20 +166,32 @@ public static class MusicTheoryService
         return Math.Min(diff, 12 - diff);
     }
 
-    public static int NoteIndex(string note)
+    public static int NoteIndex(string note) =>
+        TryNoteIndex(note, out var i) ? i : 0;
+
+    /// <summary>Resolves a note name (sharp or flat spelling) to a 0–11 semitone index.
+    /// Returns false for unrecognised input — caller decides on the fallback.</summary>
+    public static bool TryNoteIndex(string? note, out int index)
     {
-        var idx = Array.IndexOf(ChromaticNotes, note);
-        if (idx >= 0) return idx;
-        // handle enharmonic spellings
-        return note switch
+        if (string.IsNullOrEmpty(note))
+        {
+            index = -1;
+            return false;
+        }
+
+        index = Array.IndexOf(ChromaticNotes, note);
+        if (index >= 0) return true;
+
+        index = note switch
         {
             "Db" => 1,
             "Eb" => 3,
             "Gb" => 6,
             "Ab" => 8,
             "Bb" => 10,
-            _ => 0
+            _ => -1
         };
+        return index >= 0;
     }
 
     public static string NoteAtIndex(int index) => ChromaticNotes[index % 12];

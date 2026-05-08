@@ -24,14 +24,14 @@
 .scale-selector-title {
     font-size: 0.8rem;
     font-weight: 700;
-    color: #ddddf0;
+    color: #dddddd;
     text-transform: uppercase;
     letter-spacing: 0.07em;
 }
 
 .scale-expand-icon {
     font-size: 0.65rem;
-    color: #666688;
+    color: #666666;
 }
 
 .scale-selector-body {
@@ -49,7 +49,7 @@
 
 .scale-field-label {
     font-size: 0.7rem;
-    color: #888899;
+    color: #888888;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     width: 38px;
@@ -58,8 +58,8 @@
 
 .scale-select {
     flex: 1;
-    background: #1a1a2e;
-    color: #ddddf0;
+    background: #111111;
+    color: #dddddd;
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 6px;
     padding: 0.3rem 0.5rem;
@@ -93,14 +93,14 @@
 
 .scale-btn--active {
     background: #FFD700;
-    color: #1a1a2e;
+    color: #000000;
 }
 
 .scale-btn--active:hover { opacity: 0.88; transform: translateY(-1px); }
 
 .scale-btn--clear {
     background: rgba(255,255,255,0.07);
-    color: #aaaacc;
+    color: #999999;
     border: 1px solid rgba(255,255,255,0.1);
 }
 
@@ -111,7 +111,7 @@
     align-items: center;
     gap: 0.35rem;
     font-size: 0.72rem;
-    color: #aaaacc;
+    color: #999999;
     background: rgba(255,215,0,0.06);
     border: 1px solid rgba(255,215,0,0.18);
     border-radius: 6px;
@@ -142,7 +142,7 @@
     padding: 0.15rem 0.4rem;
     border-radius: 4px;
     background: rgba(255,255,255,0.07);
-    color: #aaaacc;
+    color: #999999;
 }
 
 .scale-note-chip--root {

@@ -42,3 +42,9 @@ TestResults/
 
 # git worktrees
 .worktrees/
+
+# Claude Code per-project local settings
+**/.claude/settings.local.json
+
+# Fretless.Web runtime logs
+fretless-web.*.log

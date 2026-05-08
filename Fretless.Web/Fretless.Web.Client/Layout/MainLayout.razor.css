@@ -11,13 +11,207 @@ main {
     flex-direction: column;
 }
 
+.reset-button-container {
+    position: fixed;
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.analog-input-button,
+.audio-toggle-button,
+.reset-button {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 12px;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    color: #FFD700;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0 1rem;
+}
+
+.analog-input-button {
+    gap: 0.4rem;
+    min-width: 172px;
+}
+
+.audio-toggle-button {
+    width: 44px;
+    padding: 0;
+    font-size: 1.1rem;
+}
+
+.reset-button {
+    min-width: 80px;
+}
+
+.analog-input-button:hover,
+.audio-toggle-button:hover,
+.reset-button:hover {
+    background: rgba(20,20,20,0.95);
+    border-color: rgba(255,215,0,0.7);
+    transform: scale(1.05);
+}
+
+.analog-input-button:active,
+.audio-toggle-button:active,
+.reset-button:active {
+    transform: scale(0.98);
+}
+
+.analog-input-button:focus-visible,
+.audio-toggle-button:focus-visible,
+.reset-button:focus-visible {
+    outline: 1px solid rgba(255,215,0,0.55);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(255,215,0,0.12);
+}
+
+.audio-toggle-button.muted {
+    color: rgba(255,215,0,0.58);
+}
+
+.analog-input-button.active {
+    border-color: rgba(0,229,255,0.75);
+    color: #00e5ff;
+    box-shadow: 0 0 0 1px rgba(0,229,255,0.18), 0 0 18px rgba(0,229,255,0.16);
+}
+
+.instrument-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0,0,0,0.68);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.instrument-modal {
+    width: min(92vw, 420px);
+    padding: 1rem;
+    border: 1px solid rgba(255,215,0,0.36);
+    border-radius: 16px;
+    background: #111111;
+    color: #ffffff;
+    box-shadow: 0 22px 70px rgba(0,0,0,0.45);
+}
+
+.instrument-modal-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.instrument-modal-header h2 {
+    margin: 0 0 0.3rem;
+    color: #FFD700;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.instrument-modal-header p {
+    margin: 0;
+    color: rgba(255,255,255,0.72);
+    font-size: 0.86rem;
+    line-height: 1.35;
+}
+
+.instrument-modal-close {
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 auto;
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(255,255,255,0.72);
+    cursor: pointer;
+}
+
+.instrument-modal-section {
+    display: grid;
+    gap: 0.38rem;
+    margin-bottom: 0.85rem;
+}
+
+.instrument-modal-section label {
+    color: rgba(255,255,255,0.78);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.instrument-modal-select {
+    width: 100%;
+    min-height: 2.55rem;
+    border: 1px solid #000000;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #000000;
+    font: inherit;
+    font-weight: 700;
+    padding: 0 0.75rem;
+}
+
+.instrument-modal-help {
+    margin: 0;
+    color: rgba(255,255,255,0.66);
+    font-size: 0.76rem;
+    line-height: 1.35;
+}
+
+.instrument-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+.instrument-modal-primary,
+.instrument-modal-secondary {
+    min-height: 2.5rem;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 800;
+    padding: 0 0.95rem;
+    cursor: pointer;
+}
+
+.instrument-modal-primary {
+    border: 1px solid rgba(255,215,0,0.7);
+    background: #FFD700;
+    color: #111111;
+}
+
+.instrument-modal-secondary {
+    border: 1px solid rgba(255,255,255,0.25);
+    background: transparent;
+    color: rgba(255,255,255,0.82);
+}
+
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background-image: linear-gradient(180deg, #111111 0%, #000000 70%);
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
+    background-color: #111111;
+    border-bottom: 1px solid #333333;
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
