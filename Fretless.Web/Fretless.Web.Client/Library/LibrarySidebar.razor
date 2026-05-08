@@ -1,0 +1,63 @@
+<aside class="library-sidebar" aria-label="Component library navigation">
+    <header class="library-sidebar__header">
+        <span class="library-sidebar__brand">FretLess</span>
+        <span class="library-sidebar__title">Library</span>
+    </header>
+
+    @foreach (var group in GroupOrder)
+    {
+        var entries = LibraryRegistry.ForGroup(group);
+        <section class="library-sidebar__group">
+            <h2 class="library-sidebar__group-title">@GroupLabel(group)</h2>
+            @if (entries.Count == 0)
+            {
+                <p class="library-sidebar__empty">No entries yet.</p>
+            }
+            else
+            {
+                <ul class="library-sidebar__list">
+                    @foreach (var entry in entries)
+                    {
+                        var isActive = ActiveSlug is not null
+                            && ActiveGroup == entry.Group
+                            && string.Equals(ActiveSlug, entry.Slug, StringComparison.OrdinalIgnoreCase);
+                        <li>
+                            <button type="button"
+                                    class="library-sidebar__link @(isActive ? "is-active" : null)"
+                                    @onclick="() => OnSelect(entry)">
+                                @entry.Title
+                            </button>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    }
+</aside>
+
+@code {
+    [Parameter] public LibraryGroup? ActiveGroup { get; set; }
+    [Parameter] public string? ActiveSlug { get; set; }
+    [Parameter] public EventCallback<LibraryEntry> EntrySelected { get; set; }
+
+    private static readonly LibraryGroup[] GroupOrder =
+    {
+        LibraryGroup.Atoms,
+        LibraryGroup.Primitives,
+        LibraryGroup.Components,
+        LibraryGroup.Layout,
+        LibraryGroup.Tokens,
+    };
+
+    private static string GroupLabel(LibraryGroup group) => group switch
+    {
+        LibraryGroup.Atoms => "Atoms",
+        LibraryGroup.Primitives => "Primitives",
+        LibraryGroup.Components => "Components",
+        LibraryGroup.Layout => "Layout",
+        LibraryGroup.Tokens => "Tokens",
+        _ => group.ToString(),
+    };
+
+    private Task OnSelect(LibraryEntry entry) => EntrySelected.InvokeAsync(entry);
+}
