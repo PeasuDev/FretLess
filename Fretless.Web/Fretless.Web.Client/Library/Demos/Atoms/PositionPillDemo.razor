@@ -1,0 +1,68 @@
+@namespace Fretless.Web.Client.Library.Demos.Atoms
+
+<LibraryFrame Title="PositionPill"
+              Description="Labelled wrapper for a row of inline chip controls. Renders a small uppercase label on the left and a flex-wrapping ChildContent slot on the right; light grey panel chrome with rounded corners. Used by Fretboard for its 'Position:' selector. SpiralWheel's similar but lighter-weight position/step rows are not extracted by this atom."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Atoms/PositionPill.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Empty — label only</h3>
+            <div class="variant-card__render">
+                <PositionPill Label="Position:" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;PositionPill Label="Position:" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">With RomanNumeralButton row (Fretboard pattern)</h3>
+            <div class="variant-card__render">
+                <PositionPill Label="Position:">
+                    <RomanNumeralButton Numeral="All" Active="true" />
+                    <RomanNumeralButton Numeral="I" />
+                    <RomanNumeralButton Numeral="II" />
+                    <RomanNumeralButton Numeral="III" />
+                    <RomanNumeralButton Numeral="IV" />
+                    <RomanNumeralButton Numeral="V" />
+                    <RomanNumeralButton Numeral="VI" />
+                </PositionPill>
+            </div>
+            <pre class="variant-card__code"><code>&lt;PositionPill Label="Position:"&gt;…&lt;RomanNumeralButton …/&gt;…&lt;/PositionPill&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">With NoteChip row — generic content</h3>
+            <div class="variant-card__render">
+                <PositionPill Label="Notes:">
+                    <NoteChip Note="C" Color="#5e3aa8" />
+                    <NoteChip Note="E" Color="#a84a3a" />
+                    <NoteChip Note="G" Color="#3a7da8" />
+                </PositionPill>
+            </div>
+            <pre class="variant-card__code"><code>&lt;PositionPill Label="Notes:"&gt;…&lt;NoteChip …/&gt;…&lt;/PositionPill&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Label: <input type="text" value="@_label" @oninput="e => _label = e.Value?.ToString() ?? string.Empty" style="width:8rem" />
+            </label>
+            <button type="button" @onclick="() => _count++">Add chip</button>
+            <button type="button" @onclick="() => _count = Math.Max(0, _count - 1)">Remove last</button>
+            <span>Chips: <strong>@_count</strong></span>
+        </div>
+        <div class="playground__render">
+            <PositionPill Label="@_label">
+                @for (var i = 1; i <= _count; i++)
+                {
+                    <RomanNumeralButton Numeral="@i.ToString()" Active="@(i == 1)" />
+                }
+            </PositionPill>
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private string _label = "Tags:";
+    private int _count = 3;
+}

@@ -15,23 +15,20 @@
     @* Position selector for scale degrees *@
     @if (InternalScale is not null)
     {
-        <div class="fretboard-position-row">
-            <span class="fretboard-position-label">Position:</span>
-            <div class="fretboard-position-buttons">
-                <RomanNumeralButton Numeral="All"
-                                    Active="@(SelectedPosition == null)"
-                                    OnClick="() => SelectPosition(null)" />
-                @foreach (var (degree, index) in GetScaleDegrees())
-                {
-                    if (index == 7) continue;
+        <PositionPill Label="Position:">
+            <RomanNumeralButton Numeral="All"
+                                Active="@(SelectedPosition == null)"
+                                OnClick="() => SelectPosition(null)" />
+            @foreach (var (degree, index) in GetScaleDegrees())
+            {
+                if (index == 7) continue;
 
-                    var degreeCapture = degree;
-                    <RomanNumeralButton Numeral="@GetRomanNumeral(index)"
-                                        Active="@(SelectedPosition == degree)"
-                                        OnClick="() => SelectPosition(degreeCapture)" />
-                }
-            </div>
-        </div>
+                var degreeCapture = degree;
+                <RomanNumeralButton Numeral="@GetRomanNumeral(index)"
+                                    Active="@(SelectedPosition == degree)"
+                                    OnClick="() => SelectPosition(degreeCapture)" />
+            }
+        </PositionPill>
     }
     
     <div class="fretboard-audio-row">

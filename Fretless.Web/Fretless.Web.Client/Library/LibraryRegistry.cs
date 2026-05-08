@@ -27,6 +27,13 @@ public static class LibraryRegistry
             DemoType: typeof(NoteChipDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/NoteChip.razor"),
         new(
+            Slug: "position-pill",
+            Title: "PositionPill",
+            Description: "Labelled wrapper for a row of chip controls; uppercase label + flex-wrapping ChildContent slot.",
+            Group: LibraryGroup.Atoms,
+            DemoType: typeof(PositionPillDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/PositionPill.razor"),
+        new(
             Slug: "roman-numeral-button",
             Title: "RomanNumeralButton",
             Description: "Position-selector button: white pill, gold-Active. Numeral accepts any short label (I, IV, All, etc.).",

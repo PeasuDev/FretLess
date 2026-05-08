@@ -1,0 +1,13 @@
+@namespace Fretless.Web.Client.Components.Atoms
+
+<div class="position-pill">
+    <span class="position-pill__label">@Label</span>
+    <div class="position-pill__chips">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

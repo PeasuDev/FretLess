@@ -1,0 +1,25 @@
+.position-pill {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+}
+
+.position-pill__label {
+    font-size: 0.72rem;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.position-pill__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
