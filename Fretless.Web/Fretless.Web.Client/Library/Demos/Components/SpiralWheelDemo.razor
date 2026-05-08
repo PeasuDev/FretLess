@@ -1,0 +1,16 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+
+<LibraryFrame Title="SpiralWheel"
+              Description="Self-contained spiral chart with key/scale selectors, instrument cards (fretboard / piano overlays), step-pattern chips, position selector, ratio mode, and zoom/rotation controls. No parameters: every input lives inside the component and persists to localStorage under 'fretless.spiralWheel.settings.v1'. The single variant below shares that key with the home page (/), so changes here will follow you back to Explore Scales until you click Reset in MainLayout. Phase 4 will extract SpiralView, FretboardView, and KeyboardView primitives from this component; that work is out of scope for the as-is demo."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/SpiralWheel.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Default — full interactive component</h3>
+            <div class="variant-card__render">
+                <SpiralWheel />
+            </div>
+            <pre class="variant-card__code"><code>&lt;SpiralWheel /&gt;</code></pre>
+        </div>
+    </Variants>
+</LibraryFrame>

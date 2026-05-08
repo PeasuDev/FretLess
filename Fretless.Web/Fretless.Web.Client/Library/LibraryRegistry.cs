@@ -67,6 +67,13 @@ public static class LibraryRegistry
             Group: LibraryGroup.Components,
             DemoType: typeof(FretboardDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Fretboard.razor"),
+        new(
+            Slug: "spiral-wheel",
+            Title: "SpiralWheel",
+            Description: "Self-contained spiral chart with key/scale, instrument overlays, ratios, and zoom; state persisted in localStorage and shared with the home page.",
+            Group: LibraryGroup.Components,
+            DemoType: typeof(SpiralWheelDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/SpiralWheel.razor"),
     };
 
     public static LibraryEntry? FindBySlug(LibraryGroup group, string slug)
