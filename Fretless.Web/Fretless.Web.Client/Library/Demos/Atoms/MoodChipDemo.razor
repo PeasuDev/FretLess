@@ -1,0 +1,73 @@
+@namespace Fretless.Web.Client.Library.Demos.Atoms
+@using Fretless.Web.Client.Models
+
+<LibraryFrame Title="MoodChip"
+              Description="Single mood-filter chip atom: pill-shaped button with the mood name and its mode label, bordered in the mood color. Active state fills the text in the mood color and removes the dim. Click raises OnToggle (parent owns selection state). Used by MoodLegend."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Atoms/MoodChip.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Inactive — Bright</h3>
+            <div class="variant-card__render">
+                <MoodChip Mood="ChordMood.Bright"
+                          Color="@MusicTheoryService.MoodColor(ChordMood.Bright)"
+                          Active="false" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;MoodChip Mood="ChordMood.Bright" Color="@@brightColor" Active="false" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Active — Bright</h3>
+            <div class="variant-card__render">
+                <MoodChip Mood="ChordMood.Bright"
+                          Color="@MusicTheoryService.MoodColor(ChordMood.Bright)"
+                          Active="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;MoodChip Mood="ChordMood.Bright" Color="@@brightColor" Active="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Active — Dark</h3>
+            <div class="variant-card__render">
+                <MoodChip Mood="ChordMood.Dark"
+                          Color="@MusicTheoryService.MoodColor(ChordMood.Dark)"
+                          Active="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;MoodChip Mood="ChordMood.Dark" Color="@@darkColor" Active="true" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Mood:
+                <select @bind="_playgroundMood">
+                    @foreach (var mood in Enum.GetValues<ChordMood>())
+                    {
+                        <option value="@mood">@mood</option>
+                    }
+                </select>
+            </label>
+            <span>Active: <strong>@_playgroundActive</strong></span>
+            <span>Toggle clicks: <strong>@_toggleCount</strong></span>
+        </div>
+        <div class="playground__render">
+            <MoodChip Mood="_playgroundMood"
+                      Color="@MusicTheoryService.MoodColor(_playgroundMood)"
+                      Active="_playgroundActive"
+                      OnToggle="OnPlaygroundToggle" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private ChordMood _playgroundMood = ChordMood.Bright;
+    private bool _playgroundActive;
+    private int _toggleCount;
+
+    private void OnPlaygroundToggle()
+    {
+        _playgroundActive = !_playgroundActive;
+        _toggleCount++;
+    }
+}

@@ -4,14 +4,7 @@
     @foreach (var (mood, color) in MusicTheoryService.MoodColors)
     {
         var isActive = ActiveFilter == mood;
-        <button class="mood-item @(isActive ? "active" : "inactive")"
-                @onclick="() => ToggleFilter(mood)"
-                style="--mood-color: @color"
-                aria-pressed="@isActive.ToString().ToLowerInvariant()"
-                aria-label="@mood.ToString() mood filter">
-            <span class="mood-label">@mood</span>
-            <span class="mood-mode">@MusicTheoryService.MoodModeLabels[mood]</span>
-        </button>
+        <MoodChip Mood="mood" Color="color" Active="isActive" OnToggle="() => ToggleFilter(mood)" />
     }
 </div>
 

@@ -1,0 +1,18 @@
+@namespace Fretless.Web.Client.Components.Atoms
+@using Fretless.Web.Client.Models
+
+<button class="mood-item @(Active ? "active" : "inactive")"
+        @onclick="OnToggle"
+        style="--mood-color: @Color"
+        aria-pressed="@Active.ToString().ToLowerInvariant()"
+        aria-label="@Mood.ToString() mood filter">
+    <span class="mood-label">@Mood</span>
+    <span class="mood-mode">@MusicTheoryService.MoodModeLabels[Mood]</span>
+</button>
+
+@code {
+    [Parameter, EditorRequired] public ChordMood Mood { get; set; }
+    [Parameter, EditorRequired] public string Color { get; set; } = string.Empty;
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public EventCallback OnToggle { get; set; }
+}

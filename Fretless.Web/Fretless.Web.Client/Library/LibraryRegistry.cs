@@ -1,16 +1,24 @@
 using System.Collections.Generic;
+using Fretless.Web.Client.Library.Demos.Atoms;
 using Fretless.Web.Client.Library.Demos.Components;
 
 namespace Fretless.Web.Client.Library;
 
 /// <summary>
 /// Central registry of every demo shown in the /components gallery.
-/// Phase 2 populates this incrementally with as-is demos for existing components.
+/// Populated incrementally as Phase 2 (component demos) and Phase 3 (atoms) ship.
 /// </summary>
 public static class LibraryRegistry
 {
     public static IReadOnlyList<LibraryEntry> All { get; } = new List<LibraryEntry>
     {
+        new(
+            Slug: "mood-chip",
+            Title: "MoodChip",
+            Description: "Single mood-filter chip atom: pill button bordered in a mood color, with mood + mode label and an Active state.",
+            Group: LibraryGroup.Atoms,
+            DemoType: typeof(MoodChipDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/MoodChip.razor"),
         new(
             Slug: "chord-builder-panel",
             Title: "ChordBuilderPanel",
