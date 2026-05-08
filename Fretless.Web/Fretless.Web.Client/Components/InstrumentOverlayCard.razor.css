@@ -1,0 +1,18 @@
+.spiral-instrument-overlay-card {
+    padding: 0.45rem;
+    border: 1px solid rgba(255,215,0,0.34);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.065);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 12px 30px rgba(0,0,0,0.34);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.spiral-instrument-overlay-card h3 {
+    margin: 0 0 0.35rem;
+    color: rgba(255,255,255,0.85);
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}

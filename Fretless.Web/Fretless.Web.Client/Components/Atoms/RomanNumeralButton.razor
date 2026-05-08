@@ -1,11 +1,12 @@
 @namespace Fretless.Web.Client.Components.Atoms
 
-<button class="roman-numeral-button @(Active ? "active" : null)" @onclick="OnClick">
+<button class="roman-numeral-button roman-numeral-button--@Variant @(Active ? "active" : null)" @onclick="OnClick">
     @Numeral
 </button>
 
 @code {
     [Parameter, EditorRequired] public string Numeral { get; set; } = string.Empty;
+    [Parameter] public string Variant { get; set; } = "default";
     [Parameter] public bool Active { get; set; }
     [Parameter] public EventCallback OnClick { get; set; }
 }

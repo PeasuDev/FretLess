@@ -1,0 +1,62 @@
+.spiral-connected-instrument-card {
+    gap: 0.45rem;
+}
+
+.spiral-connected-signal {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0.6rem;
+    border: 1px solid rgba(0,229,255,0.28);
+    border-radius: 10px;
+    background: radial-gradient(circle at top left, rgba(0,229,255,0.16), rgba(255,255,255,0.04) 62%);
+}
+
+.spiral-connected-note {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    gap: 0.15rem 0.55rem;
+}
+
+.spiral-connected-note-label {
+    color: rgba(255,255,255,0.82);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.spiral-connected-note-value {
+    color: #00e5ff;
+    font-size: 1.3rem;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    text-align: right;
+}
+
+.spiral-connected-note-detail {
+    grid-column: 1 / -1;
+    color: rgba(255,255,255,0.72);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.spiral-signal-waveform {
+    display: block;
+    width: 100%;
+    height: 2.6rem;
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.34), rgba(0,0,0,0.18));
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.spiral-signal-status {
+    color: rgba(255,255,255,0.72);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}

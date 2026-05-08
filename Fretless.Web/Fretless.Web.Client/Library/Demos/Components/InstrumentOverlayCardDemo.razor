@@ -1,0 +1,24 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+
+<LibraryFrame Title="InstrumentOverlayCard"
+              Description="Reusable shell for SpiralWheel instrument overlay cards. Compose it with InstrumentOverlayHeader and content such as tuning controls, visualizers, or settings panels."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/InstrumentOverlayCard.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Card with header</h3>
+            <div class="variant-card__render">
+                <InstrumentOverlayCard>
+                    <InstrumentOverlayHeader Title="Guitar fretboard">
+                        <IconButton Icon="⚙" Title="Settings" />
+                        <IconButton Icon="✕" Variant="remove" Title="Remove" />
+                    </InstrumentOverlayHeader>
+                    <div style="padding:0.5rem;border:1px solid rgba(255,215,0,0.28);border-radius:10px;color:rgba(255,255,255,0.75);">
+                        Overlay content slot
+                    </div>
+                </InstrumentOverlayCard>
+            </div>
+            <pre class="variant-card__code"><code>&lt;InstrumentOverlayCard&gt;...&lt;/InstrumentOverlayCard&gt;</code></pre>
+        </div>
+    </Variants>
+</LibraryFrame>

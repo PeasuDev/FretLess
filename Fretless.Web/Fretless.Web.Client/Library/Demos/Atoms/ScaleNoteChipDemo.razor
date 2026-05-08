@@ -1,7 +1,7 @@
 @namespace Fretless.Web.Client.Library.Demos.Atoms
 
 <LibraryFrame Title="ScaleNoteChip"
-              Description="Small pill-shaped scale-note label. Default state is muted grey; IsRoot=true highlights gold (used by ScaleSelector); IsPlaying=true adds a cyan glow (reserved for future SpiralWheel adoption — SpiralWheel currently has its own large circular .spiral-scale-note-chip that is not extracted by this atom)."
+              Description="Scale-note label atom. The compact variant supports ScaleSelector-style rows; the wheel variant renders the larger circular note chips now used by SpiralWheel. IsRoot=true highlights gold and IsPlaying=true adds cyan feedback."
               SourcePath="Fretless.Web/Fretless.Web.Client/Components/Atoms/ScaleNoteChip.razor">
 
     <Variants>
@@ -27,6 +27,14 @@
                 <ScaleNoteChip Note="G" IsPlaying="true" />
             </div>
             <pre class="variant-card__code"><code>&lt;ScaleNoteChip Note="G" IsPlaying="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Wheel — large circular chip</h3>
+            <div class="variant-card__render">
+                <ScaleNoteChip Note="A" Variant="wheel" IsRoot="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ScaleNoteChip Note="A" Variant="wheel" IsRoot="true" /&gt;</code></pre>
         </div>
 
         <div class="variant-card">

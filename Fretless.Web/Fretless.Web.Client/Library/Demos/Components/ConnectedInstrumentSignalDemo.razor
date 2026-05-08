@@ -1,0 +1,30 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+
+<LibraryFrame Title="ConnectedInstrumentSignal"
+              Description="Connected-instrument status card used by SpiralWheel to show detected pitch, frequency detail, signal status, and the waveform canvas target."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/ConnectedInstrumentSignal.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Listening — no signal</h3>
+            <div class="variant-card__render">
+                <ConnectedInstrumentSignal InstrumentName="Electric Guitar"
+                                           NoteLabel="Listening"
+                                           NoteDetail="Connect and play a single clear note."
+                                           SignalStatus="No signal" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ConnectedInstrumentSignal InstrumentName="Electric Guitar" NoteLabel="Listening" ... /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Detected pitch</h3>
+            <div class="variant-card__render">
+                <ConnectedInstrumentSignal InstrumentName="Voice"
+                                           NoteLabel="A"
+                                           NoteDetail="440.0 Hz"
+                                           SignalStatus="Signal detected" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ConnectedInstrumentSignal InstrumentName="Voice" NoteLabel="A" NoteDetail="440.0 Hz" SignalStatus="Signal detected" /&gt;</code></pre>
+        </div>
+    </Variants>
+</LibraryFrame>

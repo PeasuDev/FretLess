@@ -1,6 +1,7 @@
 # Copilot Instructions
 
 ## General Guidelines
+- Before implementing new UI/features, check whether an existing Component Library asset/component can be reused. If a new component is required, build that reusable component first to avoid redundancy and promote clean reusable patterns.
 - After implementing changes, always perform housekeeping needed for a current testing environment, then launch the app in the browser for the user to view.
 - User wants implementation to proceed incrementally with alignment check-ins on the intent of each feature before moving to the next feature.
 - User prefers plain white dropdowns with black text for usability in the SpiralWheel UI.

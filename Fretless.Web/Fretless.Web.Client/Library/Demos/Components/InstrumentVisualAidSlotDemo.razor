@@ -1,0 +1,24 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+
+<LibraryFrame Title="InstrumentVisualAidSlot"
+              Description="Empty SpiralWheel visual-aid slot that offers add actions for the guitar fretboard and piano keyboard widgets."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/InstrumentVisualAidSlot.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Both visual aids available</h3>
+            <div class="variant-card__render">
+                <InstrumentVisualAidSlot CanAddGuitar="true" CanAddPiano="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;InstrumentVisualAidSlot CanAddGuitar="true" CanAddPiano="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Only piano available</h3>
+            <div class="variant-card__render">
+                <InstrumentVisualAidSlot CanAddPiano="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;InstrumentVisualAidSlot CanAddPiano="true" /&gt;</code></pre>
+        </div>
+    </Variants>
+</LibraryFrame>

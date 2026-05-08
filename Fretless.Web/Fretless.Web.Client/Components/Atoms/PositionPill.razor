@@ -1,6 +1,6 @@
 @namespace Fretless.Web.Client.Components.Atoms
 
-<div class="position-pill">
+<div class="position-pill position-pill--@Variant">
     <span class="position-pill__label">@Label</span>
     <div class="position-pill__chips">
         @ChildContent
@@ -9,5 +9,6 @@
 
 @code {
     [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public string Variant { get; set; } = "default";
     [Parameter] public RenderFragment? ChildContent { get; set; }
 }

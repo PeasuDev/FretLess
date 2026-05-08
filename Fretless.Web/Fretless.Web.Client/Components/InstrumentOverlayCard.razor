@@ -1,0 +1,9 @@
+<div class="spiral-instrument-overlay-card @CssClass" aria-label="@AriaLabel">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? AriaLabel { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

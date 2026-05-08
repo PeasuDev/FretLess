@@ -17,3 +17,36 @@
     color: #00e5ff;
     box-shadow: 0 0 8px rgba(0,229,255,0.5);
 }
+
+.scale-note-chip--wheel {
+    flex: 0 0 auto;
+    width: 3.25rem;
+    height: 3.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(232,232,240,0.9);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.1;
+    text-align: center;
+    transition: background 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s, transform 0.12s;
+}
+
+.scale-note-chip--wheel.scale-note-chip--root {
+    background: rgba(255,215,0,0.16);
+    border-color: rgba(255,215,0,0.48);
+    color: #ffd700;
+}
+
+.scale-note-chip--wheel.scale-note-chip--playing {
+    background: #00e5ff;
+    border-color: #ffffff;
+    color: #061114;
+    box-shadow: 0 0 18px rgba(0,229,255,0.85);
+    transform: translateY(-1px) scale(1.08);
+}

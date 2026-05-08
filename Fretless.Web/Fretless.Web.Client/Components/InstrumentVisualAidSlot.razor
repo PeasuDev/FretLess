@@ -1,0 +1,26 @@
+<div class="spiral-instrument-overlay-card spiral-instrument-empty-slot" aria-label="Empty instrument slot">
+    <div class="spiral-instrument-empty-slot-inner">
+        <p class="spiral-instrument-empty-label">Add a Visual Aid</p>
+        <div class="spiral-instrument-add-options">
+            @if (CanAddGuitar)
+            {
+                <button class="spiral-instrument-add-btn" @onclick="AddGuitar">
+                    + Guitar Fretboard
+                </button>
+            }
+            @if (CanAddPiano)
+            {
+                <button class="spiral-instrument-add-btn" @onclick="AddPiano">
+                    + Piano Keyboard
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool CanAddGuitar { get; set; }
+    [Parameter] public bool CanAddPiano { get; set; }
+    [Parameter] public EventCallback AddGuitar { get; set; }
+    [Parameter] public EventCallback AddPiano { get; set; }
+}

@@ -162,7 +162,7 @@ public partial class SpiralWheel
     private double? _currentInputFrequency;
     private double? _currentInputLevel;
     private string? _connectedInstrumentName;
-    private ElementReference _waveformCanvasRef;
+    private ConnectedInstrumentSignal? _connectedInstrumentSignal;
     private bool _waveformCanvasAttached;
 
     private string CurrentInputNoteLabel => _currentInputMidi is int midi
@@ -198,6 +198,24 @@ public partial class SpiralWheel
     private void OnTuningDone()
     {
         _showTuningSetup = false;
+        PersistSettings();
+    }
+
+    private void OnShowGuitarNoteNamesChanged(bool show)
+    {
+        _showGuitarNoteNames = show;
+        PersistSettings();
+    }
+
+    private void OnShowGuitarFretNumbersChanged(bool show)
+    {
+        _showGuitarFretNumbers = show;
+        PersistSettings();
+    }
+
+    private void OnShowPianoNoteNamesChanged(bool show)
+    {
+        _showPianoNoteNames = show;
         PersistSettings();
     }
 
@@ -529,7 +547,7 @@ public partial class SpiralWheel
 
         if (!_waveformCanvasAttached && !string.IsNullOrWhiteSpace(_connectedInstrumentName))
         {
-            await JS.InvokeVoidAsync("fretlessAudioInput.attachWaveformCanvas", _waveformCanvasRef);
+            await JS.InvokeVoidAsync("fretlessAudioInput.attachWaveformCanvas", _connectedInstrumentSignal?.WaveformCanvas);
             _waveformCanvasAttached = true;
         }
     }

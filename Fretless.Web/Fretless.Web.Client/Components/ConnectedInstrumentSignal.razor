@@ -1,0 +1,23 @@
+<div class="spiral-instrument-overlay-card spiral-connected-instrument-card" aria-label="Connected instrument signal monitor">
+    <div class="spiral-fretboard-card-header">
+        <h3>@InstrumentName Connected</h3>
+    </div>
+
+    <div class="spiral-connected-signal" aria-label="Realtime audio waveform">
+        <div class="spiral-connected-note">
+            <span class="spiral-connected-note-label">Detected Note</span>
+            <span class="spiral-connected-note-value">@NoteLabel</span>
+            <span class="spiral-connected-note-detail">@NoteDetail</span>
+        </div>
+        <canvas @ref="WaveformCanvas" class="spiral-signal-waveform" aria-hidden="true"></canvas>
+        <div class="spiral-signal-status">@SignalStatus</div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string InstrumentName { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string NoteLabel { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string NoteDetail { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string SignalStatus { get; set; } = string.Empty;
+    [Parameter] public ElementReference WaveformCanvas { get; set; }
+}

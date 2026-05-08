@@ -1,7 +1,7 @@
 @namespace Fretless.Web.Client.Library.Demos.Atoms
 
 <LibraryFrame Title="RomanNumeralButton"
-              Description="Compact pill-shaped button used for scale-degree position selection. White by default, gold when Active. Numeral is any short string ('I', 'IV', 'All', etc.) so the same atom serves both labelled and numeric positions. Used by Fretboard's position selector. SpiralWheel's overlay-position buttons are out of scope (separate extraction)."
+              Description="Compact pill-shaped button used for scale-degree position selection. White by default, gold when Active. Numeral is any short string ('I', 'IV', 'All', etc.) so the same atom serves both labelled and numeric positions in Fretboard and SpiralWheel."
               SourcePath="Fretless.Web/Fretless.Web.Client/Components/Atoms/RomanNumeralButton.razor">
 
     <Variants>
@@ -19,6 +19,14 @@
                 <RomanNumeralButton Numeral="IV" Active="true" />
             </div>
             <pre class="variant-card__code"><code>&lt;RomanNumeralButton Numeral="IV" Active="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Compact — SpiralWheel overlay</h3>
+            <div class="variant-card__render">
+                <RomanNumeralButton Numeral="all" Variant="compact" Active="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;RomanNumeralButton Numeral="all" Variant="compact" Active="true" /&gt;</code></pre>
         </div>
 
         <div class="variant-card">

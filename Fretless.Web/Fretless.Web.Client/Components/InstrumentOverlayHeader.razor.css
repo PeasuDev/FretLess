@@ -1,0 +1,21 @@
+.spiral-fretboard-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+    margin-bottom: 0.35rem;
+}
+
+.spiral-fretboard-card-header h3 {
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+.spiral-instrument-card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1 1 auto;
+    gap: 0.45rem;
+    min-width: 0;
+}

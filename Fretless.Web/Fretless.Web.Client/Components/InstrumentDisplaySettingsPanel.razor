@@ -1,0 +1,31 @@
+<div class="spiral-instrument-settings-panel">
+    @if (ShowNoteNamesOption)
+    {
+        <label class="spiral-instrument-settings-option">
+            <input type="checkbox" checked="@ShowNoteNames" @onchange="OnShowNoteNamesChanged" />
+            <span>Show note names</span>
+        </label>
+    }
+    @if (ShowFretNumbersOption)
+    {
+        <label class="spiral-instrument-settings-option">
+            <input type="checkbox" checked="@ShowFretNumbers" @onchange="OnShowFretNumbersChanged" />
+            <span>Show fret numbers</span>
+        </label>
+    }
+</div>
+
+@code {
+    [Parameter] public bool ShowNoteNamesOption { get; set; } = true;
+    [Parameter] public bool ShowFretNumbersOption { get; set; }
+    [Parameter] public bool ShowNoteNames { get; set; }
+    [Parameter] public EventCallback<bool> ShowNoteNamesChanged { get; set; }
+    [Parameter] public bool ShowFretNumbers { get; set; }
+    [Parameter] public EventCallback<bool> ShowFretNumbersChanged { get; set; }
+
+    private Task OnShowNoteNamesChanged(ChangeEventArgs e) =>
+        ShowNoteNamesChanged.InvokeAsync((bool?)e.Value ?? false);
+
+    private Task OnShowFretNumbersChanged(ChangeEventArgs e) =>
+        ShowFretNumbersChanged.InvokeAsync((bool?)e.Value ?? false);
+}

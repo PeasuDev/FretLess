@@ -1,0 +1,25 @@
+.spiral-instrument-settings-panel {
+    margin-bottom: 0.35rem;
+    padding: 0.38rem 0.45rem;
+    border: 1px solid rgba(255,215,0,0.22);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    display: grid;
+    gap: 0.35rem;
+}
+
+.spiral-instrument-settings-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: rgba(255,255,255,0.86);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.spiral-instrument-settings-option input {
+    accent-color: #ffd700;
+}

@@ -22,3 +22,22 @@
     border-color: #FFD700;
     font-weight: 700;
 }
+
+.roman-numeral-button--compact {
+    border-color: #000000;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: lowercase;
+    padding: 0.16rem 0.42rem;
+}
+
+.roman-numeral-button--compact:hover {
+    background: #f3f3f3;
+}
+
+.roman-numeral-button--compact.active {
+    background: #ffd700;
+    color: #111111;
+    border-color: #ffd700;
+}

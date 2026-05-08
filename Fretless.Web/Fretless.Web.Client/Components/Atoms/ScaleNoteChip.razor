@@ -1,11 +1,12 @@
 @namespace Fretless.Web.Client.Components.Atoms
 
-<span class="scale-note-chip @(IsRoot ? "scale-note-chip--root" : null) @(IsPlaying ? "scale-note-chip--playing" : null)">
+<span class="scale-note-chip scale-note-chip--@Variant @(IsRoot ? "scale-note-chip--root" : null) @(IsPlaying ? "scale-note-chip--playing" : null)">
     @Note
 </span>
 
 @code {
     [Parameter, EditorRequired] public string Note { get; set; } = string.Empty;
+    [Parameter] public string Variant { get; set; } = "compact";
     [Parameter] public bool IsRoot { get; set; }
     [Parameter] public bool IsPlaying { get; set; }
 }

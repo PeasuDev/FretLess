@@ -47,7 +47,9 @@
                 @foreach (var note in selectedScaleNoteLabels)
                 {
                     var isPlaying = IsSemitonePlaying(KeyLabelToChromaticSemitone(note));
-                    <span class="spiral-scale-note-chip @(isPlaying ? "spiral-scale-note-chip--playing" : null)">@note</span>
+                    var isRoot = !string.IsNullOrWhiteSpace(_selectedKey)
+                        && KeyLabelToChromaticSemitone(note) == KeyLabelToChromaticSemitone(_selectedKey);
+                    <ScaleNoteChip Note="@note" Variant="wheel" IsRoot="isRoot" IsPlaying="isPlaying" />
                 }
             </div>
         }
@@ -277,21 +279,11 @@
             <div class="spiral-instrument-overlay-stack">
                 @if (!string.IsNullOrWhiteSpace(_connectedInstrumentName))
                 {
-                    <div class="spiral-instrument-overlay-card spiral-connected-instrument-card" aria-label="Connected instrument signal monitor">
-                        <div class="spiral-fretboard-card-header">
-                            <h3>@_connectedInstrumentName Connected</h3>
-                        </div>
-
-                        <div class="spiral-connected-signal" aria-label="Realtime audio waveform">
-                            <div class="spiral-connected-note">
-                                <span class="spiral-connected-note-label">Detected Note</span>
-                                <span class="spiral-connected-note-value">@CurrentInputNoteLabel</span>
-                                <span class="spiral-connected-note-detail">@CurrentInputDetail</span>
-                            </div>
-                            <canvas @ref="_waveformCanvasRef" class="spiral-signal-waveform" aria-hidden="true"></canvas>
-                            <div class="spiral-signal-status">@CurrentSignalStatus</div>
-                        </div>
-                    </div>
+                    <ConnectedInstrumentSignal InstrumentName="@_connectedInstrumentName"
+                                               NoteLabel="@CurrentInputNoteLabel"
+                                               NoteDetail="@CurrentInputDetail"
+                                               SignalStatus="@CurrentSignalStatus"
+                                               @ref="_connectedInstrumentSignal" />
                 }
 
                 @{
@@ -310,32 +302,15 @@
                             continue;
                         }
 
-                        <div class="spiral-instrument-overlay-card spiral-instrument-empty-slot" aria-label="Empty instrument slot">
-                            <div class="spiral-instrument-empty-slot-inner">
-                                <p class="spiral-instrument-empty-label">Add a Visual Aid</p>
-                                <div class="spiral-instrument-add-options">
-                                    @if (!InstrumentSlots.Contains(InstrumentType.Guitar))
-                                    {
-                                        <button class="spiral-instrument-add-btn" @onclick="() => SetInstrumentSlot(slot, InstrumentType.Guitar)">
-                                            + Guitar Fretboard
-                                        </button>
-                                    }
-                                    @if (!InstrumentSlots.Contains(InstrumentType.Piano))
-                                    {
-                                        <button class="spiral-instrument-add-btn" @onclick="() => SetInstrumentSlot(slot, InstrumentType.Piano)">
-                                            + Piano Keyboard
-                                        </button>
-                                    }
-                                </div>
-                            </div>
-                        </div>
+                        <InstrumentVisualAidSlot CanAddGuitar="@(!InstrumentSlots.Contains(InstrumentType.Guitar))"
+                                                 CanAddPiano="@(!InstrumentSlots.Contains(InstrumentType.Piano))"
+                                                 AddGuitar="() => SetInstrumentSlot(slot, InstrumentType.Guitar)"
+                                                 AddPiano="() => SetInstrumentSlot(slot, InstrumentType.Piano)" />
                     }
                     else if (instrument == InstrumentType.Guitar)
                     {
-                        <div class="spiral-instrument-overlay-card">
-                            <div class="spiral-fretboard-card-header">
-                                <h3>Guitar fretboard</h3>
-                                <div class="spiral-instrument-card-actions">
+                        <InstrumentOverlayCard>
+                            <InstrumentOverlayHeader Title="Guitar fretboard">
                                     <button class="spiral-tuning-setup-btn @(_showTuningSetup ? "active" : null)"
                                             @onclick="ToggleTuningSetup"
                                             title="Configure strings and tuning">
@@ -350,21 +325,15 @@
                                                 Variant="remove"
                                                 Title="Remove instrument"
                                                 OnClick="() => SetInstrumentSlot(slot, InstrumentType.None)" />
-                                </div>
-                            </div>
+                            </InstrumentOverlayHeader>
 
                             @if (_openInstrumentSettingsSlot == slot)
                             {
-                                <div class="spiral-instrument-settings-panel">
-                                    <label class="spiral-instrument-settings-option">
-                                        <input type="checkbox" @bind="_showGuitarNoteNames" @bind:after="PersistSettings" />
-                                        <span>Show note names</span>
-                                    </label>
-                                    <label class="spiral-instrument-settings-option">
-                                        <input type="checkbox" @bind="_showGuitarFretNumbers" @bind:after="PersistSettings" />
-                                        <span>Show fret numbers</span>
-                                    </label>
-                                </div>
+                                <InstrumentDisplaySettingsPanel ShowNoteNames="@_showGuitarNoteNames"
+                                                                ShowNoteNamesChanged="OnShowGuitarNoteNamesChanged"
+                                                                ShowFretNumbersOption="true"
+                                                                ShowFretNumbers="@_showGuitarFretNumbers"
+                                                                ShowFretNumbersChanged="OnShowGuitarFretNumbersChanged" />
                             }
 
                             @if (_showTuningSetup)
@@ -453,30 +422,27 @@
 
                             @if (showScaleBoxes)
                             {
-                                <div class="spiral-overlay-position-row" role="group" aria-label="Fretboard scale positions">
-                                    <span class="spiral-overlay-position-label">Positions</span>
-                                    <button class="spiral-overlay-position-btn @(_selectedOverlayScaleDegree is null ? "active" : null)"
-                                            @onclick="() => SelectOverlayScalePosition(null)">
-                                        all
-                                    </button>
+                                <PositionPill Label="Positions" Variant="compact">
+                                    <RomanNumeralButton Numeral="all"
+                                                        Variant="compact"
+                                                        Active="@(_selectedOverlayScaleDegree is null)"
+                                                        OnClick="() => SelectOverlayScalePosition(null)" />
                                     @foreach (var position in overlayScaleDegrees)
                                     {
                                         var degree = position.Degree;
-                                        <button class="spiral-overlay-position-btn @(_selectedOverlayScaleDegree == degree ? "active" : null)"
-                                                @onclick="() => SelectOverlayScalePosition(degree)">
-                                            @RomanNumeral(position.Degree)
-                                        </button>
+                                        <RomanNumeralButton Numeral="@RomanNumeral(position.Degree)"
+                                                            Variant="compact"
+                                                            Active="@(_selectedOverlayScaleDegree == degree)"
+                                                            OnClick="() => SelectOverlayScalePosition(degree)" />
                                     }
-                                </div>
+                                </PositionPill>
                             }
-                        </div>
+                        </InstrumentOverlayCard>
                     }
                     else if (instrument == InstrumentType.Piano)
                     {
-                        <div class="spiral-instrument-overlay-card">
-                            <div class="spiral-fretboard-card-header">
-                                <h3>Piano keyboard</h3>
-                                <div class="spiral-instrument-card-actions">
+                        <InstrumentOverlayCard>
+                            <InstrumentOverlayHeader Title="Piano keyboard">
                                     <IconButton Icon="⚙"
                                                 Variant="settings"
                                                 Active="@(_openInstrumentSettingsSlot == slot)"
@@ -486,17 +452,12 @@
                                                 Variant="remove"
                                                 Title="Remove instrument"
                                                 OnClick="() => SetInstrumentSlot(slot, InstrumentType.None)" />
-                                </div>
-                            </div>
+                            </InstrumentOverlayHeader>
 
                             @if (_openInstrumentSettingsSlot == slot)
                             {
-                                <div class="spiral-instrument-settings-panel">
-                                    <label class="spiral-instrument-settings-option">
-                                        <input type="checkbox" @bind="_showPianoNoteNames" @bind:after="PersistSettings" />
-                                        <span>Show note names</span>
-                                    </label>
-                                </div>
+                                <InstrumentDisplaySettingsPanel ShowNoteNames="@_showPianoNoteNames"
+                                                                ShowNoteNamesChanged="OnShowPianoNoteNamesChanged" />
                             }
                             <svg viewBox="0 0 330 108" class="spiral-mini-keys" role="img" aria-label="Selected notes on piano keyboard">
                                 <rect x="0" y="0" width="330" height="108" rx="8" fill="transparent" />
@@ -557,7 +518,7 @@
                                     </div>
                                 </div>
                             }
-                        </div>
+                        </InstrumentOverlayCard>
                     }
                 }
             </div><!-- /.spiral-instrument-overlay-stack -->
