@@ -1,0 +1,47 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+@using Fretless.Web.Client.Models
+
+<LibraryFrame Title="MoodLegend"
+              Description="Row of mood filter chips, one per ChordMood. Each button shows the mood name and its mode label, colored from MusicTheoryService.MoodColors. Single-selection; clicking the active mood clears the filter."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/MoodLegend.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Default — no filter</h3>
+            <div class="variant-card__render">
+                <MoodLegend />
+            </div>
+            <pre class="variant-card__code"><code>&lt;MoodLegend /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Bright filter active</h3>
+            <div class="variant-card__render">
+                <MoodLegend ActiveFilter="ChordMood.Bright" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;MoodLegend ActiveFilter="ChordMood.Bright" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Mysterious filter active</h3>
+            <div class="variant-card__render">
+                <MoodLegend ActiveFilter="ChordMood.Mysterious" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;MoodLegend ActiveFilter="ChordMood.Mysterious" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <span>Current filter: <strong>@(_playgroundFilter?.ToString() ?? "none")</strong></span>
+            <button type="button" @onclick="() => _playgroundFilter = null">Clear</button>
+        </div>
+        <div class="playground__render">
+            <MoodLegend @bind-ActiveFilter="_playgroundFilter" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private ChordMood? _playgroundFilter;
+}

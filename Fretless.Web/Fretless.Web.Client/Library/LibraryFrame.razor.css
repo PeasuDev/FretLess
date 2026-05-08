@@ -64,3 +64,71 @@
     letter-spacing: 0.12em;
     color: #888;
 }
+
+.library-frame__section ::deep .variant-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+}
+
+.library-frame__section ::deep .variant-card__label {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ffd700;
+    letter-spacing: 0.02em;
+}
+
+.library-frame__section ::deep .variant-card__render {
+    padding: 0.75rem;
+    background: #000000;
+    border-radius: 6px;
+}
+
+.library-frame__section ::deep .variant-card__code {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    color: #c8c8c8;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.library-frame__section ::deep .playground__strip {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.6rem 0.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: #c8c8c8;
+    font-size: 0.85rem;
+}
+
+.library-frame__section ::deep .playground__strip button {
+    padding: 0.3rem 0.7rem;
+    background: rgba(255, 215, 0, 0.12);
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 4px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.library-frame__section ::deep .playground__strip button:hover {
+    background: rgba(255, 215, 0, 0.22);
+}
+
+.library-frame__section ::deep .playground__render {
+    padding: 0.75rem;
+    background: #000000;
+    border-radius: 6px;
+}
