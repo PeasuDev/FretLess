@@ -1,0 +1,41 @@
+.icon-button {
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 800;
+    width: 2.15rem;
+    height: 2.15rem;
+    padding: 0;
+    cursor: pointer;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.icon-button--settings {
+    border: 1px solid #000000;
+    background: #ffffff;
+    color: #000000;
+    font-size: 0.95rem;
+}
+
+.icon-button--settings:hover {
+    background: #f3f3f3;
+}
+
+.icon-button--settings.is-active {
+    background: #ffd700;
+    border-color: #b89a00;
+    color: #111111;
+}
+
+.icon-button--remove {
+    border: 1px solid rgba(255,255,255,0.25);
+    background: transparent;
+    color: rgba(255,255,255,0.55);
+    font-size: 1rem;
+}
+
+.icon-button--remove:hover {
+    background: rgba(255,80,80,0.18);
+    border-color: rgba(255,80,80,0.5);
+    color: #ff6060;
+}

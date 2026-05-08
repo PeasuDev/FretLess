@@ -13,6 +13,13 @@ public static class LibraryRegistry
     public static IReadOnlyList<LibraryEntry> All { get; } = new List<LibraryEntry>
     {
         new(
+            Slug: "icon-button",
+            Title: "IconButton",
+            Description: "Square icon button with settings (white/gold) and remove (ghosted/red) variants used by SpiralWheel instrument cards.",
+            Group: LibraryGroup.Atoms,
+            DemoType: typeof(IconButtonDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/IconButton.razor"),
+        new(
             Slug: "mood-chip",
             Title: "MoodChip",
             Description: "Single mood-filter chip atom: pill button bordered in a mood color, with mood + mode label and an Active state.",

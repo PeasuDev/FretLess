@@ -1,0 +1,77 @@
+@namespace Fretless.Web.Client.Library.Demos.Atoms
+
+<LibraryFrame Title="IconButton"
+              Description="Square icon button used by SpiralWheel's instrument cards. Variant='settings' is the white/black ⚙ toggle with a gold Active highlight; Variant='remove' is the ghosted ✕ that turns red on hover. Title is applied to both the title attribute and aria-label for screen readers."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Atoms/IconButton.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Settings — inactive</h3>
+            <div class="variant-card__render">
+                <IconButton Icon="⚙" Variant="settings" Title="Open settings" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;IconButton Icon="⚙" Variant="settings" Title="Open settings" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Settings — active (gold)</h3>
+            <div class="variant-card__render">
+                <IconButton Icon="⚙" Variant="settings" Active="true" Title="Settings open" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;IconButton Icon="⚙" Variant="settings" Active="true" Title="Settings open" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Remove — ghosted (hover for red)</h3>
+            <div class="variant-card__render">
+                <IconButton Icon="✕" Variant="remove" Title="Remove instrument" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;IconButton Icon="✕" Variant="remove" Title="Remove instrument" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Pair — settings + remove side by side</h3>
+            <div class="variant-card__render">
+                <div style="display:flex;align-items:center;gap:0.45rem;">
+                    <IconButton Icon="⚙" Variant="settings" Active="@_pairActive" Title="Toggle settings" OnClick="() => _pairActive = !_pairActive" />
+                    <IconButton Icon="✕" Variant="remove" Title="Remove" />
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>&lt;IconButton ⚙ /&gt; &lt;IconButton ✕ /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Icon: <input type="text" value="@_icon" @oninput="e => _icon = e.Value?.ToString() ?? string.Empty" maxlength="2" style="width:3rem" />
+            </label>
+            <label>
+                Variant:
+                <select @bind="_variant">
+                    <option value="settings">settings</option>
+                    <option value="remove">remove</option>
+                </select>
+            </label>
+            <label>
+                <input type="checkbox" checked="@_active" @onchange="e => _active = (bool?)e.Value ?? false" /> Active
+            </label>
+            <label>
+                Title: <input type="text" value="@_title" @oninput="e => _title = e.Value?.ToString() ?? string.Empty" style="width:8rem" />
+            </label>
+            <span>Clicks: <strong>@_clicks</strong></span>
+        </div>
+        <div class="playground__render">
+            <IconButton Icon="@_icon" Variant="@_variant" Active="@_active" Title="@_title" OnClick="() => _clicks++" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private bool _pairActive;
+    private string _icon = "⚙";
+    private string _variant = "settings";
+    private bool _active;
+    private string _title = "Configure";
+    private int _clicks;
+}

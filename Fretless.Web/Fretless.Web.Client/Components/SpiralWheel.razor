@@ -341,13 +341,15 @@
                                             title="Configure strings and tuning">
                                         @_currentTuning.Name
                                     </button>
-                                    <button class="spiral-instrument-settings-btn @(_openInstrumentSettingsSlot == slot ? "active" : null)"
-                                            @onclick="() => ToggleInstrumentSettings(slot)"
-                                            title="Guitar display settings"
-                                            aria-label="Guitar display settings">
-                                        ⚙
-                                    </button>
-                                    <button class="spiral-instrument-remove-btn" @onclick="() => SetInstrumentSlot(slot, InstrumentType.None)" title="Remove instrument">✕</button>
+                                    <IconButton Icon="⚙"
+                                                Variant="settings"
+                                                Active="@(_openInstrumentSettingsSlot == slot)"
+                                                Title="Guitar display settings"
+                                                OnClick="() => ToggleInstrumentSettings(slot)" />
+                                    <IconButton Icon="✕"
+                                                Variant="remove"
+                                                Title="Remove instrument"
+                                                OnClick="() => SetInstrumentSlot(slot, InstrumentType.None)" />
                                 </div>
                             </div>
 
@@ -475,13 +477,15 @@
                             <div class="spiral-fretboard-card-header">
                                 <h3>Piano keyboard</h3>
                                 <div class="spiral-instrument-card-actions">
-                                    <button class="spiral-instrument-settings-btn @(_openInstrumentSettingsSlot == slot ? "active" : null)"
-                                            @onclick="() => ToggleInstrumentSettings(slot)"
-                                            title="Piano display settings"
-                                            aria-label="Piano display settings">
-                                        ⚙
-                                    </button>
-                                    <button class="spiral-instrument-remove-btn" @onclick="() => SetInstrumentSlot(slot, InstrumentType.None)" title="Remove instrument">✕</button>
+                                    <IconButton Icon="⚙"
+                                                Variant="settings"
+                                                Active="@(_openInstrumentSettingsSlot == slot)"
+                                                Title="Piano display settings"
+                                                OnClick="() => ToggleInstrumentSettings(slot)" />
+                                    <IconButton Icon="✕"
+                                                Variant="remove"
+                                                Title="Remove instrument"
+                                                OnClick="() => SetInstrumentSlot(slot, InstrumentType.None)" />
                                 </div>
                             </div>
 

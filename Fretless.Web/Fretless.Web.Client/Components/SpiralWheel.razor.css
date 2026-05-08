@@ -848,32 +848,6 @@
     color: #111;
 }
 
-.spiral-instrument-settings-btn {
-    border: 1px solid #000000;
-    border-radius: 8px;
-    background: #ffffff;
-    color: #000000;
-    font: inherit;
-    font-size: 0.95rem;
-    font-weight: 800;
-    width: 2.15rem;
-    height: 2.15rem;
-    padding: 0;
-    cursor: pointer;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.spiral-instrument-settings-btn:hover {
-    background: #f3f3f3;
-}
-
-.spiral-instrument-settings-btn.active {
-    background: #ffd700;
-    border-color: #b89a00;
-    color: #111111;
-}
-
 .spiral-instrument-settings-panel {
     margin-bottom: 0.35rem;
     padding: 0.38rem 0.45rem;
@@ -907,27 +881,6 @@
     flex: 1 1 auto;
     gap: 0.45rem;
     min-width: 0;
-}
-
-.spiral-instrument-remove-btn {
-    border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 8px;
-    background: transparent;
-    color: rgba(255,255,255,0.55);
-    font: inherit;
-    font-size: 1rem;
-    width: 2.15rem;
-    height: 2.15rem;
-    padding: 0;
-    cursor: pointer;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.spiral-instrument-remove-btn:hover {
-    background: rgba(255,80,80,0.18);
-    border-color: rgba(255,80,80,0.5);
-    color: #ff6060;
 }
 
 .spiral-instrument-empty-slot {

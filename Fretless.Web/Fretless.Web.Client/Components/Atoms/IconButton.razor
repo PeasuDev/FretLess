@@ -1,0 +1,16 @@
+@namespace Fretless.Web.Client.Components.Atoms
+
+<button class="icon-button icon-button--@Variant @(Active ? "is-active" : null)"
+        @onclick="OnClick"
+        title="@Title"
+        aria-label="@Title">
+    @Icon
+</button>
+
+@code {
+    [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
+    [Parameter] public string Variant { get; set; } = "settings";
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnClick { get; set; }
+}
