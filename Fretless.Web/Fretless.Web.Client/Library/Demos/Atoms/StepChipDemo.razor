@@ -1,0 +1,53 @@
+@namespace Fretless.Web.Client.Library.Demos.Atoms
+
+<LibraryFrame Title="StepChip"
+              Description="Tiny styled span used by SpiralWheel to render a scale's whole/half step pattern letter (W or H). Bold, slightly tracked, near-white. Display-only — no interactions."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Atoms/StepChip.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Whole step (W)</h3>
+            <div class="variant-card__render">
+                <StepChip Text="W" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;StepChip Text="W" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Half step (H)</h3>
+            <div class="variant-card__render">
+                <StepChip Text="H" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;StepChip Text="H" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Major scale pattern — W W H W W W H</h3>
+            <div class="variant-card__render">
+                <div style="display:flex;flex-wrap:wrap;gap:0.55rem;">
+                    @foreach (var step in MajorPattern)
+                    {
+                        <StepChip Text="@step" />
+                    }
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>foreach: &lt;StepChip Text="…" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Text: <input type="text" value="@_text" @oninput="e => _text = e.Value?.ToString() ?? string.Empty" maxlength="3" style="width:3rem" />
+            </label>
+        </div>
+        <div class="playground__render">
+            <StepChip Text="@_text" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly string[] MajorPattern = ["W", "W", "H", "W", "W", "W", "H"];
+    private string _text = "W";
+}

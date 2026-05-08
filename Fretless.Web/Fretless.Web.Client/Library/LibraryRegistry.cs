@@ -48,6 +48,13 @@ public static class LibraryRegistry
             DemoType: typeof(ScaleNoteChipDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/ScaleNoteChip.razor"),
         new(
+            Slug: "step-chip",
+            Title: "StepChip",
+            Description: "Bold tracked letter (W/H) used in SpiralWheel's scale step-pattern row.",
+            Group: LibraryGroup.Atoms,
+            DemoType: typeof(StepChipDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/StepChip.razor"),
+        new(
             Slug: "string-tuning-row",
             Title: "StringTuningRow",
             Description: "Per-string editor row: number, gauge marker, MIDI-note dropdown, resolved note label.",
