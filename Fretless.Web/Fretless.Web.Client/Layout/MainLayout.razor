@@ -5,6 +5,10 @@
 
 <NavMenu />
 
+<main>
+    @Body
+</main>
+
 <div class="reset-button-container">
     <button class="analog-input-button @(_isAnalogInputEnabled ? "active" : null)"
             @onclick="OpenConnectInstrumentModal"
