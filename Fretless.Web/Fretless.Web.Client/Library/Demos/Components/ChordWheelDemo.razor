@@ -1,0 +1,47 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+@using Fretless.Web.Client.Models
+
+<LibraryFrame Title="ChordWheel"
+              Description="Interactive circle-of-fifths wheel. Self-contained: only parameter is OnChordSelected. Internal state holds the selected note and active chord; clicking a note reveals diatonic chord cards (Primary / Secondary), clicking a chord plays it via Web Audio. MIDI notes from MidiService are highlighted on the outer ring. Because no inputs control visual state, there is only one parametric variant — the playground below proves the callback fires."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/ChordWheel.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Default — click a note to drive selection</h3>
+            <div class="variant-card__render">
+                <ChordWheel />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ChordWheel /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <span>Last OnChordSelected: <strong>@(_lastChord?.DisplayName ?? "(none / cleared)")</strong></span>
+            <span>Mood: <strong>@(_lastChord?.Type.Mood.ToString() ?? "—")</strong></span>
+            <span>Event count: <strong>@_eventCount</strong></span>
+            <button type="button" @onclick="Reset"
+                    disabled="@(_eventCount == 0)">Reset readout</button>
+        </div>
+        <div class="playground__render">
+            <ChordWheel OnChordSelected="OnChordChanged" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private NoteChord? _lastChord;
+    private int _eventCount;
+
+    private void OnChordChanged(NoteChord? chord)
+    {
+        _lastChord = chord;
+        _eventCount++;
+    }
+
+    private void Reset()
+    {
+        _lastChord = null;
+        _eventCount = 0;
+    }
+}

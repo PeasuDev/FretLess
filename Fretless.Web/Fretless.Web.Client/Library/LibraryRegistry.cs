@@ -53,6 +53,13 @@ public static class LibraryRegistry
             Group: LibraryGroup.Components,
             DemoType: typeof(ScaleSelectorDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ScaleSelector.razor"),
+        new(
+            Slug: "chord-wheel",
+            Title: "ChordWheel",
+            Description: "Interactive circle-of-fifths wheel with diatonic chord drill-down; emits OnChordSelected when a chord card is tapped.",
+            Group: LibraryGroup.Components,
+            DemoType: typeof(ChordWheelDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ChordWheel.razor"),
     };
 
     public static LibraryEntry? FindBySlug(LibraryGroup group, string slug)
