@@ -1,0 +1,72 @@
+@page "/components"
+@implements IDisposable
+@inject NavigationManager Navigation
+
+<PageTitle>Library | Fretless</PageTitle>
+
+<div class="component-library">
+    <LibrarySidebar ActiveGroup="@_activeEntry?.Group"
+                    ActiveSlug="@_activeEntry?.Slug"
+                    EntrySelected="OnEntrySelected" />
+    <LibraryDetail Entry="@_activeEntry" />
+</div>
+
+@code {
+    private LibraryEntry? _activeEntry;
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        ApplyHashFromUri(Navigation.Uri);
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        ApplyHashFromUri(e.Location);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ApplyHashFromUri(string uri)
+    {
+        var hashIndex = uri.IndexOf('#');
+        if (hashIndex < 0 || hashIndex == uri.Length - 1)
+        {
+            _activeEntry = null;
+            return;
+        }
+
+        var hash = uri[(hashIndex + 1)..];
+        var slash = hash.IndexOf('/');
+        if (slash <= 0 || slash == hash.Length - 1)
+        {
+            _activeEntry = null;
+            return;
+        }
+
+        var groupSegment = hash[..slash];
+        var slugSegment = hash[(slash + 1)..];
+
+        if (!Enum.TryParse<LibraryGroup>(groupSegment, ignoreCase: true, out var group))
+        {
+            _activeEntry = null;
+            return;
+        }
+
+        _activeEntry = LibraryRegistry.FindBySlug(group, slugSegment);
+    }
+
+    private Task OnEntrySelected(LibraryEntry entry)
+    {
+        _activeEntry = entry;
+        var groupSlug = entry.Group.ToString().ToLowerInvariant();
+        var hash = $"#{groupSlug}/{entry.Slug}";
+        var newUri = Navigation.BaseUri + "components";
+        Navigation.NavigateTo(newUri + hash, forceLoad: false, replace: true);
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}
