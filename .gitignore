@@ -36,3 +36,6 @@ TestResults/
 
 # macOS
 .DS_Store
+
+# superpowers brainstorm session content
+.superpowers/
