@@ -1,0 +1,78 @@
+@namespace Fretless.Web.Client.Library.Demos.Atoms
+
+<LibraryFrame Title="NoteChip"
+              Description="Pill-shaped note label with a colored background. Removable=true adds an inline ✕ button that fires OnRemove. Used by ChordBuilderPanel for the built-up-notes row. ChordPairings has structurally different chord+relationship chips that aren't covered by this atom."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Atoms/NoteChip.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Display only — non-removable</h3>
+            <div class="variant-card__render">
+                <NoteChip Note="C" Color="#5e3aa8" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;NoteChip Note="C" Color="#5e3aa8" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Removable — with ✕ button</h3>
+            <div class="variant-card__render">
+                <NoteChip Note="E" Color="#a84a3a" Removable="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;NoteChip Note="E" Color="#a84a3a" Removable="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Row of multiple — chord-builder style</h3>
+            <div class="variant-card__render">
+                <div style="display:flex;flex-wrap:wrap;gap:0.35rem;">
+                    @foreach (var (note, color) in ChordRow)
+                    {
+                        <NoteChip Note="note" Color="color" Removable="true" />
+                    }
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>@@foreach (var (note, color) in chord) { &lt;NoteChip Note="note" Color="color" Removable="true" /&gt; }</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Note: <input type="text" value="@_playgroundNote" @oninput="OnNoteInput" maxlength="3" style="width:3rem" />
+            </label>
+            <label>
+                Color: <input type="color" value="@_playgroundColor" @onchange="OnColorChange" />
+            </label>
+            <label>
+                <input type="checkbox" checked="@_playgroundRemovable" @onchange="OnRemovableChange" />
+                Removable
+            </label>
+            <span>Remove clicks: <strong>@_removeCount</strong></span>
+        </div>
+        <div class="playground__render">
+            <NoteChip Note="@_playgroundNote"
+                      Color="@_playgroundColor"
+                      Removable="@_playgroundRemovable"
+                      OnRemove="OnPlaygroundRemove" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly (string Note, string Color)[] ChordRow =
+    [
+        ("C", "#5e3aa8"),
+        ("E", "#a84a3a"),
+        ("G", "#3a7da8"),
+    ];
+
+    private string _playgroundNote = "A";
+    private string _playgroundColor = "#a83a78";
+    private bool _playgroundRemovable = true;
+    private int _removeCount;
+
+    private void OnNoteInput(ChangeEventArgs e) => _playgroundNote = e.Value?.ToString() ?? string.Empty;
+    private void OnColorChange(ChangeEventArgs e) => _playgroundColor = e.Value?.ToString() ?? "#000";
+    private void OnRemovableChange(ChangeEventArgs e) => _playgroundRemovable = (bool?)e.Value ?? false;
+    private void OnPlaygroundRemove() => _removeCount++;
+}

@@ -1,0 +1,18 @@
+@namespace Fretless.Web.Client.Components.Atoms
+
+<div class="note-chip" style="background: @Color; color: #fff;">
+    <span class="note-chip-name">@Note</span>
+    @if (Removable)
+    {
+        <button class="note-chip-remove"
+                aria-label="Remove @Note"
+                @onclick="OnRemove">✕</button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Note { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Color { get; set; } = string.Empty;
+    [Parameter] public bool Removable { get; set; }
+    [Parameter] public EventCallback OnRemove { get; set; }
+}

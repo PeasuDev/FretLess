@@ -20,6 +20,13 @@ public static class LibraryRegistry
             DemoType: typeof(MoodChipDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/MoodChip.razor"),
         new(
+            Slug: "note-chip",
+            Title: "NoteChip",
+            Description: "Pill-shaped note label with a colored background; optional ✕ remove button when Removable=true.",
+            Group: LibraryGroup.Atoms,
+            DemoType: typeof(NoteChipDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/NoteChip.razor"),
+        new(
             Slug: "string-tuning-row",
             Title: "StringTuningRow",
             Description: "Per-string editor row: number, gauge marker, MIDI-note dropdown, resolved note label.",

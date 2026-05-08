@@ -15,10 +15,10 @@
             <div class="note-chips">
                 @foreach (var note in BuiltNotes)
                 {
-                    <div class="note-chip" style="background: @NoteColor(note); color: #fff;">
-                        <span class="note-chip-name">@note</span>
-                        <button class="note-chip-remove" aria-label="Remove @note" @onclick="() => RemoveNote(note)">✕</button>
-                    </div>
+                    <NoteChip Note="note"
+                              Color="@NoteColor(note)"
+                              Removable="true"
+                              OnRemove="() => RemoveNote(note)" />
                 }
             </div>
         }
