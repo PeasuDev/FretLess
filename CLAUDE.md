@@ -11,6 +11,7 @@ Solution projects:
 - `Fretless.Web/Fretless.Web.Client` — Blazor WebAssembly project. **This is where almost all UI and music-theory logic lives.** Components, pages, layouts, models, and services (`MusicTheoryService`, `TuningService`, `MidiService`) are here.
 - `Fretless.AppHost` — Aspire AppHost; only registers `fretless-web` as a project resource.
 - `Fretless.ServiceDefaults` — shared Aspire defaults (OpenTelemetry, health checks, service discovery, resilience). Wired via `builder.AddServiceDefaults()` in `Fretless.Web/Program.cs`.
+- `Fretless.Tests` — xUnit test project covering `Fretless.Web.Client` (currently `MusicTheoryServiceTests.cs`). Targets `net10.0`, references the client project. Run with `dotnet test Fretless.Tests/Fretless.Tests.csproj`.
 
 `MauiApp1/` is a separate MAUI project **not in `Fretless.slnx`** and unrelated to the web app's build — ignore it unless explicitly working on MAUI.
 
@@ -74,7 +75,7 @@ Start a new feature branch (kills running Fretless.Web processes, switches/pulls
 
 Aspire watch mode is available via the `https (watch)` launch profile in `Fretless.AppHost/Properties/launchSettings.json` (sets `DOTNET_WATCH=1`, `--watch`).
 
-There is no test project in the solution today — `dotnet test` runs cleanly with zero tests. Don't claim "tests pass" as evidence of anything; rely on the build + manual verification flow described in `scripts/review.ps1`.
+`Fretless.Tests` (xUnit, in the solution) covers `MusicTheoryService` today. Run via `dotnet test Fretless.Tests/Fretless.Tests.csproj` or `./scripts/verify.ps1` (which runs them as part of the verify pipeline). UI/component behavior still relies on manual verification per `scripts/review.ps1` — passing tests confirm the music-theory math, not feature correctness in the browser.
 
 ## Branching and deploy
 
