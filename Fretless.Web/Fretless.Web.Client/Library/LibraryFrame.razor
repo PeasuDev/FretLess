@@ -1,0 +1,40 @@
+<div class="library-frame">
+    <header class="library-frame__header">
+        <h1 class="library-frame__title">@Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Description))
+        {
+            <p class="library-frame__description">@Description</p>
+        }
+        @if (!string.IsNullOrWhiteSpace(SourcePath))
+        {
+            <p class="library-frame__source">
+                <span class="library-frame__source-label">Source:</span>
+                <code>@SourcePath</code>
+            </p>
+        }
+    </header>
+
+    @if (Variants is not null)
+    {
+        <section class="library-frame__section" aria-label="Variants">
+            <h2 class="library-frame__section-title">Variants</h2>
+            @Variants
+        </section>
+    }
+
+    @if (Controls is not null)
+    {
+        <section class="library-frame__section" aria-label="Controls">
+            <h2 class="library-frame__section-title">Controls</h2>
+            @Controls
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? SourcePath { get; set; }
+    [Parameter] public RenderFragment? Variants { get; set; }
+    [Parameter] public RenderFragment? Controls { get; set; }
+}
