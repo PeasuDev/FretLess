@@ -26,6 +26,13 @@ public static class LibraryRegistry
             DemoType: typeof(ChordPairingsDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ChordPairings.razor"),
         new(
+            Slug: "harmonic-stability-display",
+            Title: "HarmonicStabilityDisplay",
+            Description: "SVG bubble cluster encoding pairwise consonance of 3+ notes; renders nothing below the threshold.",
+            Group: LibraryGroup.Components,
+            DemoType: typeof(HarmonicStabilityDisplayDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/HarmonicStabilityDisplay.razor"),
+        new(
             Slug: "mood-legend",
             Title: "MoodLegend",
             Description: "Row of mood filter chips driven by MusicTheoryService.MoodColors.",

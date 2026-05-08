@@ -1,0 +1,70 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+
+<LibraryFrame Title="HarmonicStabilityDisplay"
+              Description="SVG bubble cluster scoring harmonic consonance of the given Notes via MusicTheoryService.ComputeHarmonicStability. Renders nothing when fewer than 3 notes; bubble size + color encode per-note consonance, line color/thickness encode pairwise consonance."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/HarmonicStabilityDisplay.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Empty — fewer than 3 notes</h3>
+            <div class="variant-card__render">
+                <HarmonicStabilityDisplay Notes="@(new List<string>())" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;HarmonicStabilityDisplay Notes="new()" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Major triad — C E G</h3>
+            <div class="variant-card__render">
+                <HarmonicStabilityDisplay Notes="@MajorTriad" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;HarmonicStabilityDisplay Notes="[ &quot;C&quot;, &quot;E&quot;, &quot;G&quot; ]" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Diminished triad — C Eb Gb</h3>
+            <div class="variant-card__render">
+                <HarmonicStabilityDisplay Notes="@DiminishedTriad" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;HarmonicStabilityDisplay Notes="[ &quot;C&quot;, &quot;Eb&quot;, &quot;Gb&quot; ]" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Tense cluster — C C# D</h3>
+            <div class="variant-card__render">
+                <HarmonicStabilityDisplay Notes="@TenseCluster" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;HarmonicStabilityDisplay Notes="[ &quot;C&quot;, &quot;C#&quot;, &quot;D&quot; ]" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Notes (comma- or space-separated):
+                <input type="text" value="@_input" @oninput="OnInputChanged" placeholder="e.g. C E G B" />
+            </label>
+            <span>Parsed: <strong>@(_parsed.Count == 0 ? "(none)" : string.Join(" ", _parsed))</strong></span>
+        </div>
+        <div class="playground__render">
+            <HarmonicStabilityDisplay Notes="@_parsed" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly IReadOnlyList<string> MajorTriad = ["C", "E", "G"];
+    private static readonly IReadOnlyList<string> DiminishedTriad = ["C", "Eb", "Gb"];
+    private static readonly IReadOnlyList<string> TenseCluster = ["C", "C#", "D"];
+
+    private string _input = "C E G B";
+    private IReadOnlyList<string> _parsed = ["C", "E", "G", "B"];
+
+    private void OnInputChanged(ChangeEventArgs e)
+    {
+        _input = e.Value?.ToString() ?? string.Empty;
+        _parsed = _input
+            .Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToArray();
+    }
+}
