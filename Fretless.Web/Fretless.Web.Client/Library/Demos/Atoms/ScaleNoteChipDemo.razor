@@ -1,0 +1,79 @@
+@namespace Fretless.Web.Client.Library.Demos.Atoms
+
+<LibraryFrame Title="ScaleNoteChip"
+              Description="Small pill-shaped scale-note label. Default state is muted grey; IsRoot=true highlights gold (used by ScaleSelector); IsPlaying=true adds a cyan glow (reserved for future SpiralWheel adoption — SpiralWheel currently has its own large circular .spiral-scale-note-chip that is not extracted by this atom)."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Atoms/ScaleNoteChip.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Default — non-root scale degree</h3>
+            <div class="variant-card__render">
+                <ScaleNoteChip Note="D" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ScaleNoteChip Note="D" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Root — gold highlight</h3>
+            <div class="variant-card__render">
+                <ScaleNoteChip Note="C" IsRoot="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ScaleNoteChip Note="C" IsRoot="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Playing — cyan glow</h3>
+            <div class="variant-card__render">
+                <ScaleNoteChip Note="G" IsPlaying="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ScaleNoteChip Note="G" IsPlaying="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Row — C major scale</h3>
+            <div class="variant-card__render">
+                <div style="display:flex;flex-wrap:wrap;gap:0.3rem;">
+                    @foreach (var (note, isRoot) in CMajorScale)
+                    {
+                        <ScaleNoteChip Note="note" IsRoot="isRoot" />
+                    }
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>foreach: &lt;ScaleNoteChip Note="…" IsRoot="…" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Note: <input type="text" value="@_note" @oninput="e => _note = e.Value?.ToString() ?? string.Empty" maxlength="3" style="width:3rem" />
+            </label>
+            <label>
+                <input type="checkbox" checked="@_isRoot" @onchange="e => _isRoot = (bool?)e.Value ?? false" /> Root
+            </label>
+            <label>
+                <input type="checkbox" checked="@_isPlaying" @onchange="e => _isPlaying = (bool?)e.Value ?? false" /> Playing
+            </label>
+        </div>
+        <div class="playground__render">
+            <ScaleNoteChip Note="@_note" IsRoot="_isRoot" IsPlaying="_isPlaying" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly (string Note, bool IsRoot)[] CMajorScale =
+    [
+        ("C", true),
+        ("D", false),
+        ("E", false),
+        ("F", false),
+        ("G", false),
+        ("A", false),
+        ("B", false),
+    ];
+
+    private string _note = "F";
+    private bool _isRoot;
+    private bool _isPlaying;
+}

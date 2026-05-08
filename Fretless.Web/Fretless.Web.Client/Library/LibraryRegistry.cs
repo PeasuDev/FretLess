@@ -27,6 +27,13 @@ public static class LibraryRegistry
             DemoType: typeof(NoteChipDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/NoteChip.razor"),
         new(
+            Slug: "scale-note-chip",
+            Title: "ScaleNoteChip",
+            Description: "Small pill labeling a scale degree; gold for root, cyan glow for playing.",
+            Group: LibraryGroup.Atoms,
+            DemoType: typeof(ScaleNoteChipDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/ScaleNoteChip.razor"),
+        new(
             Slug: "string-tuning-row",
             Title: "StringTuningRow",
             Description: "Per-string editor row: number, gauge marker, MIDI-note dropdown, resolved note label.",

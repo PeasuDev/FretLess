@@ -55,9 +55,7 @@
                     @foreach (var idx in ActiveOverlay.NoteSet.OrderBy(n => (n - ActiveOverlay.RootIndex + 12) % 12))
                     {
                         var isRoot = idx == ActiveOverlay.RootIndex;
-                        <span class="scale-note-chip @(isRoot ? "scale-note-chip--root" : "")">
-                            @MusicTheoryService.NoteAtIndex(idx)
-                        </span>
+                        <ScaleNoteChip Note="@MusicTheoryService.NoteAtIndex(idx)" IsRoot="isRoot" />
                     }
                 </div>
             }
