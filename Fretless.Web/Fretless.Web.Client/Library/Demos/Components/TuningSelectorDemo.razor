@@ -1,0 +1,73 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+@using Fretless.Web.Client.Models
+
+<LibraryFrame Title="TuningSelector"
+              Description="Preset dropdown plus collapsible per-string editor. Initial Tuning sets the preset; clicking a string note flips to a 'Custom' preset. Inline=true forces the expanded layout and surfaces the OnDone callback."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/TuningSelector.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Default — Standard EADGBE (collapsed)</h3>
+            <div class="variant-card__render">
+                <TuningSelector />
+            </div>
+            <pre class="variant-card__code"><code>&lt;TuningSelector /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Drop D preset (collapsed)</h3>
+            <div class="variant-card__render">
+                <TuningSelector Tuning="@DropD" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;TuningSelector Tuning="@@DropD" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Inline mode — always expanded, exposes Done</h3>
+            <div class="variant-card__render">
+                <TuningSelector Inline="true" OnDone="OnInlineDone" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;TuningSelector Inline="true" OnDone="..." /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Tuning preset:
+                <select @bind="_selectedPresetName">
+                    @foreach (var p in TuningService.Presets)
+                    {
+                        <option value="@p.Name">@p.Name</option>
+                    }
+                </select>
+            </label>
+            <span>MIDI notes: <strong>@string.Join(" ", PlaygroundTuning.MidiNotes)</strong></span>
+            <span>Inline Done clicks: <strong>@_inlineDoneCount</strong></span>
+        </div>
+        <div class="playground__render">
+            <TuningSelector Tuning="@PlaygroundTuning" TuningChanged="OnPlaygroundChanged" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly TuningPreset DropD =
+        TuningService.Presets.First(p => p.Name == "Drop D (DADGBE)");
+
+    private string _selectedPresetName = TuningService.Standard.Name;
+    private int _inlineDoneCount;
+
+    private TuningPreset PlaygroundTuning =>
+        TuningService.Presets.FirstOrDefault(p => p.Name == _selectedPresetName)
+        ?? TuningService.Standard;
+
+    private void OnPlaygroundChanged(TuningPreset preset)
+    {
+        // When users edit strings the component reports a "Custom" preset. Track its
+        // name so the dropdown reflects that in the readout above.
+        _selectedPresetName = preset.Name;
+    }
+
+    private void OnInlineDone() => _inlineDoneCount++;
+}

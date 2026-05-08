@@ -39,6 +39,13 @@ public static class LibraryRegistry
             Group: LibraryGroup.Components,
             DemoType: typeof(MoodLegendDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/MoodLegend.razor"),
+        new(
+            Slug: "tuning-selector",
+            Title: "TuningSelector",
+            Description: "Preset dropdown + collapsible per-string MIDI-note editor; Inline mode forces expanded with a Done button.",
+            Group: LibraryGroup.Components,
+            DemoType: typeof(TuningSelectorDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/TuningSelector.razor"),
     };
 
     public static LibraryEntry? FindBySlug(LibraryGroup group, string slug)
