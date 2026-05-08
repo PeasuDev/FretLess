@@ -46,6 +46,13 @@ public static class LibraryRegistry
             Group: LibraryGroup.Components,
             DemoType: typeof(TuningSelectorDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/TuningSelector.razor"),
+        new(
+            Slug: "scale-selector",
+            Title: "ScaleSelector",
+            Description: "Collapsible Key + Scale picker that emits a ScaleOverlay (root + scale definition + computed note set).",
+            Group: LibraryGroup.Components,
+            DemoType: typeof(ScaleSelectorDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ScaleSelector.razor"),
     };
 
     public static LibraryEntry? FindBySlug(LibraryGroup group, string slug)

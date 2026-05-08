@@ -1,0 +1,60 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+@using Fretless.Web.Client.Models
+
+<LibraryFrame Title="ScaleSelector"
+              Description="Collapsible scale picker: Key + Scale dropdowns drive an ActiveOverlay, with a Clear action and a badge showing the resolved scale name and ordered note set when active."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/ScaleSelector.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">No active overlay</h3>
+            <div class="variant-card__render">
+                <ScaleSelector />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ScaleSelector /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">C Major (Ionian)</h3>
+            <div class="variant-card__render">
+                <ScaleSelector ActiveOverlay="@CMajorScale" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ScaleSelector ActiveOverlay='new("C", majorScale)' /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">A Natural Minor (Aeolian)</h3>
+            <div class="variant-card__render">
+                <ScaleSelector ActiveOverlay="@AMinorScale" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ScaleSelector ActiveOverlay='new("A", minorScale)' /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <span>
+                Bound overlay:
+                <strong>@(_playgroundOverlay?.DisplayName ?? "(none)")</strong>
+            </span>
+            <span>Note count: <strong>@(_playgroundOverlay?.NoteSet.Count ?? 0)</strong></span>
+            <button type="button" @onclick="() => _playgroundOverlay = null"
+                    disabled="@(_playgroundOverlay is null)">Reset to none</button>
+        </div>
+        <div class="playground__render">
+            <ScaleSelector @bind-ActiveOverlay="_playgroundOverlay" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly ScaleDefinition MajorScale =
+        MusicTheoryService.Scales.First(s => s.Name == "Major (Ionian)");
+    private static readonly ScaleDefinition NaturalMinor =
+        MusicTheoryService.Scales.First(s => s.Name == "Natural Minor (Aeolian)");
+
+    private static readonly ScaleOverlay CMajorScale = new("C", MajorScale);
+    private static readonly ScaleOverlay AMinorScale = new("A", NaturalMinor);
+
+    private ScaleOverlay? _playgroundOverlay;
+}
