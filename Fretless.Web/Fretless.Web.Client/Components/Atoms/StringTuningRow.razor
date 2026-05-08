@@ -1,0 +1,29 @@
+@namespace Fretless.Web.Client.Components.Atoms
+@using System.Globalization
+
+<div class="tuning-string-row">
+    <span class="string-num">@StringNum</span>
+    <span class="string-icon" style="height: @(Gauge.ToString("F2", CultureInfo.InvariantCulture))px">━</span>
+    <select class="string-note-select" value="@MidiNote" @onchange="OnSelectChanged">
+        @foreach (var (midi, label) in TuningService.AllNotes)
+        {
+            <option value="@midi">@label</option>
+        }
+    </select>
+    <span class="string-note-label">@TuningService.MidiLabel(MidiNote)</span>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public int StringNum { get; set; }
+    [Parameter, EditorRequired] public int MidiNote { get; set; }
+    [Parameter] public double Gauge { get; set; } = 1.0;
+    [Parameter] public EventCallback<int> OnChanged { get; set; }
+
+    private async Task OnSelectChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var midi))
+        {
+            await OnChanged.InvokeAsync(midi);
+        }
+    }
+}

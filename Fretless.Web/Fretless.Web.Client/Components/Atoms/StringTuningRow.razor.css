@@ -1,0 +1,47 @@
+.tuning-string-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.string-num {
+    font-size: 0.7rem;
+    color: #666666;
+    width: 0.9rem;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.string-icon {
+    display: block;
+    width: 14px;
+    background: #D4C078;
+    border-radius: 1px;
+    flex-shrink: 0;
+}
+
+.string-note-select {
+    flex: 1;
+    background: #111111;
+    color: #e8e8e8;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    appearance: auto;
+}
+
+.string-note-select:focus {
+    outline: 1px solid #FFD700;
+    border-color: #FFD700;
+}
+
+.string-note-label {
+    font-size: 0.75rem;
+    color: #FFD700;
+    width: 2.4rem;
+    text-align: right;
+    flex-shrink: 0;
+    font-weight: 600;
+}

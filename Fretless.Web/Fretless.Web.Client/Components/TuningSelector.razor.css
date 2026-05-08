@@ -49,8 +49,7 @@
     align-items: center;
 }
 
-.tuning-preset-select,
-.string-note-select {
+.tuning-preset-select {
     flex: 1;
     background: #111111;
     color: #e8e8e8;
@@ -66,8 +65,7 @@
     min-width: 120px;
 }
 
-.tuning-preset-select:focus,
-.string-note-select:focus {
+.tuning-preset-select:focus {
     outline: 1px solid #FFD700;
     border-color: #FFD700;
 }
@@ -155,37 +153,6 @@
     color: #FFD700;
     min-width: 1.2rem;
     text-align: center;
-}
-
-.tuning-string-row {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-}
-
-.string-num {
-    font-size: 0.7rem;
-    color: #666666;
-    width: 0.9rem;
-    text-align: right;
-    flex-shrink: 0;
-}
-
-.string-icon {
-    display: block;
-    width: 14px;
-    background: #D4C078;
-    border-radius: 1px;
-    flex-shrink: 0;
-}
-
-.string-note-label {
-    font-size: 0.75rem;
-    color: #FFD700;
-    width: 2.4rem;
-    text-align: right;
-    flex-shrink: 0;
-    font-weight: 600;
 }
 
 .tuning-done-row {

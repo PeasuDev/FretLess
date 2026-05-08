@@ -20,6 +20,13 @@ public static class LibraryRegistry
             DemoType: typeof(MoodChipDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/MoodChip.razor"),
         new(
+            Slug: "string-tuning-row",
+            Title: "StringTuningRow",
+            Description: "Per-string editor row: number, gauge marker, MIDI-note dropdown, resolved note label.",
+            Group: LibraryGroup.Atoms,
+            DemoType: typeof(StringTuningRowDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/StringTuningRow.razor"),
+        new(
             Slug: "chord-builder-panel",
             Title: "ChordBuilderPanel",
             Description: "Built-up chord accumulator with removable note chips, stability cluster at 3+ notes, and chord summary.",

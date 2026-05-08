@@ -1,0 +1,61 @@
+@namespace Fretless.Web.Client.Library.Demos.Atoms
+
+<LibraryFrame Title="StringTuningRow"
+              Description="One row of the TuningSelector's per-string editor: string number, gauge marker (visual thickness scales with the Gauge param), MIDI-note dropdown sourced from TuningService.AllNotes, and the resolved note label. OnChanged fires with the new MIDI value when the dropdown changes."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Atoms/StringTuningRow.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">High E (string 1, MIDI 64, thin gauge)</h3>
+            <div class="variant-card__render">
+                <StringTuningRow StringNum="1" MidiNote="64" Gauge="1.0" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;StringTuningRow StringNum="1" MidiNote="64" Gauge="1.0" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">D string (string 4, MIDI 50, medium gauge)</h3>
+            <div class="variant-card__render">
+                <StringTuningRow StringNum="4" MidiNote="50" Gauge="2.05" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;StringTuningRow StringNum="4" MidiNote="50" Gauge="2.05" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Low E (string 6, MIDI 40, thick gauge)</h3>
+            <div class="variant-card__render">
+                <StringTuningRow StringNum="6" MidiNote="40" Gauge="2.75" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;StringTuningRow StringNum="6" MidiNote="40" Gauge="2.75" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <span>StringNum: <strong>@_playgroundStringNum</strong></span>
+            <span>MidiNote: <strong>@_playgroundMidi</strong></span>
+            <span>Resolved: <strong>@TuningService.MidiLabel(_playgroundMidi)</strong></span>
+            <span>Change events: <strong>@_changeCount</strong></span>
+            <button type="button" @onclick="() => { _playgroundMidi = 40; _changeCount = 0; }">Reset to E2</button>
+        </div>
+        <div class="playground__render">
+            <StringTuningRow StringNum="_playgroundStringNum"
+                             MidiNote="_playgroundMidi"
+                             Gauge="_playgroundGauge"
+                             OnChanged="OnPlaygroundChanged" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private const int _playgroundStringNum = 1;
+    private const double _playgroundGauge = 1.5;
+    private int _playgroundMidi = 64;
+    private int _changeCount;
+
+    private void OnPlaygroundChanged(int midi)
+    {
+        _playgroundMidi = midi;
+        _changeCount++;
+    }
+}

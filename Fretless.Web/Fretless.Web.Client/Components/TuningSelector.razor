@@ -46,19 +46,10 @@
                 var idx = i;
                 var stringNum = _strings.Count - i;
                 var gaugeThickness = 1.0 + (_strings.Count - 1 - i) * 0.35;
-                <div class="tuning-string-row">
-                    <span class="string-num">@stringNum</span>
-                    <span class="string-icon" style="height: @(gaugeThickness)px">━</span>
-                    <select class="string-note-select"
-                            value="@_strings[idx]"
-                            @onchange="e => OnStringNoteChanged(idx, e)">
-                        @foreach (var (midi, label) in TuningService.AllNotes)
-                        {
-                            <option value="@midi">@label</option>
-                        }
-                    </select>
-                    <span class="string-note-label">@TuningService.MidiLabel(_strings[idx])</span>
-                </div>
+                <StringTuningRow StringNum="stringNum"
+                                 MidiNote="_strings[idx]"
+                                 Gauge="gaugeThickness"
+                                 OnChanged="@(midi => OnStringNoteChanged(idx, midi))" />
             }
 
             @if (Inline && OnDone.HasDelegate)
@@ -108,14 +99,11 @@
         await NotifyChanged(preset.Name);
     }
 
-    private async Task OnStringNoteChanged(int index, ChangeEventArgs e)
+    private async Task OnStringNoteChanged(int index, int midi)
     {
-        if (int.TryParse(e.Value?.ToString(), out var midi))
-        {
-            _strings[index] = midi;
-            _selectedPresetName = "Custom";
-            await NotifyChanged("Custom");
-        }
+        _strings[index] = midi;
+        _selectedPresetName = "Custom";
+        await NotifyChanged("Custom");
     }
 
     private async Task AddString()
