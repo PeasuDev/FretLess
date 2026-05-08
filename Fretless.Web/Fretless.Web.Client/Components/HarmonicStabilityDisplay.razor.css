@@ -24,10 +24,3 @@
     letter-spacing: 0.03em;
 }
 
-.hs-svg {
-    width: 100%;
-    /* Square aspect ratio — fills the panel width */
-    aspect-ratio: 1 / 1;
-    display: block;
-    overflow: visible;
-}

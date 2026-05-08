@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Fretless.Web.Client.Library.Demos.Atoms;
 using Fretless.Web.Client.Library.Demos.Components;
+using Fretless.Web.Client.Library.Demos.Primitives;
 
 namespace Fretless.Web.Client.Library;
 
@@ -68,6 +69,13 @@ public static class LibraryRegistry
             Group: LibraryGroup.Atoms,
             DemoType: typeof(StringTuningRowDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/StringTuningRow.razor"),
+        new(
+            Slug: "stability-cluster",
+            Title: "StabilityCluster",
+            Description: "Stateless SVG bubble cluster encoding per-note consonance + pairwise relationships.",
+            Group: LibraryGroup.Primitives,
+            DemoType: typeof(StabilityClusterDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Primitives/StabilityCluster.razor"),
         new(
             Slug: "chord-builder-panel",
             Title: "ChordBuilderPanel",

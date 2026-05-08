@@ -1,0 +1,90 @@
+@namespace Fretless.Web.Client.Library.Demos.Primitives
+
+<LibraryFrame Title="StabilityCluster"
+              Description="Stateless SVG primitive that draws the bubble cluster used by HarmonicStabilityDisplay. Bubble radius/colour encode per-note consonance; line thickness/colour blend the pair's consonance. Pure renderer — no IJSRuntime, no service injection. Renders nothing if Notes.Count is below 3 or doesn't match Stability.Count."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Primitives/StabilityCluster.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Below threshold — &lt; 3 notes</h3>
+            <div class="variant-card__render">
+                <StabilityCluster Notes="@(new[] { "C", "E" })" Stability="@(new[] { 0.9, 0.85 })" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;StabilityCluster Notes="[C, E]" Stability="[0.9, 0.85]" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Major triad — high consonance (green/yellow)</h3>
+            <div class="variant-card__render">
+                <div style="max-width:200px;">
+                    <StabilityCluster Notes="@(new[] { "C", "E", "G" })" Stability="@(new[] { 0.95, 0.85, 0.92 })" />
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>&lt;StabilityCluster Notes="[C, E, G]" Stability="[.95, .85, .92]" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Tense cluster — low consonance (red)</h3>
+            <div class="variant-card__render">
+                <div style="max-width:200px;">
+                    <StabilityCluster Notes="@(new[] { "C", "C#", "D" })" Stability="@(new[] { 0.2, 0.15, 0.18 })" />
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>&lt;StabilityCluster Notes="[C, C#, D]" Stability="[.2, .15, .18]" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Live computation — C major scale (uses MusicTheoryService)</h3>
+            <div class="variant-card__render">
+                <div style="max-width:200px;">
+                    @{
+                        var (cmajNotes, cmajCons) = ComputeFor("C", "D", "E", "F", "G", "A", "B");
+                    }
+                    <StabilityCluster Notes="cmajNotes" Stability="cmajCons" />
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>var s = MusicTheoryService.ComputeHarmonicStability(notes); &lt;StabilityCluster …/&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Notes (comma-separated): <input type="text" value="@_input" @oninput="OnInput" placeholder="C E G B" style="width:10rem" />
+            </label>
+            <span>Parsed: <strong>@(_notes.Length == 0 ? "(none)" : string.Join(" ", _notes))</strong></span>
+        </div>
+        <div class="playground__render">
+            <div style="max-width:200px;">
+                <StabilityCluster Notes="_notes" Stability="_consonances" />
+            </div>
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private string _input = "C E G B";
+    private string[] _notes = ["C", "E", "G", "B"];
+    private double[] _consonances = ComputeConsonances(["C", "E", "G", "B"]);
+
+    private void OnInput(ChangeEventArgs e)
+    {
+        _input = e.Value?.ToString() ?? string.Empty;
+        _notes = _input
+            .Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToArray();
+        _consonances = ComputeConsonances(_notes);
+    }
+
+    private static (string[] Notes, double[] Consonances) ComputeFor(params string[] notes)
+    {
+        var s = MusicTheoryService.ComputeHarmonicStability(notes);
+        return (s.Select(x => x.Note).ToArray(), s.Select(x => x.Consonance).ToArray());
+    }
+
+    private static double[] ComputeConsonances(IReadOnlyList<string> notes)
+    {
+        if (notes.Count < 3) return [];
+        return MusicTheoryService.ComputeHarmonicStability(notes).Select(x => x.Consonance).ToArray();
+    }
+}
