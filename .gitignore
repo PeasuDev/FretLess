@@ -39,3 +39,6 @@ TestResults/
 
 # superpowers brainstorm session content
 .superpowers/
+
+# git worktrees
+.worktrees/
