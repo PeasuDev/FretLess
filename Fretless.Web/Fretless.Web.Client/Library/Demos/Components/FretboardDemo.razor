@@ -1,0 +1,100 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+@using Fretless.Web.Client.Models
+
+<LibraryFrame Title="Fretboard"
+              Description="Full-featured 12-fret SVG fretboard with audio, MIDI input, scale overlay, position selector, manual dot toggles, volume/mute, and tuning. Public parameters cover ActiveChord (highlights chord notes), Tuning (string MIDI numbers), and TuningChanged (raised when the user edits tuning); everything else lives in internal state."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Fretboard.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Default — Standard EADGBE, no active chord</h3>
+            <div class="variant-card__render">
+                <Fretboard />
+            </div>
+            <pre class="variant-card__code"><code>&lt;Fretboard /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">C major active</h3>
+            <div class="variant-card__render">
+                <Fretboard ActiveChord="@CMajor" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;Fretboard ActiveChord="@@cMajor" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Drop D tuning, A minor active</h3>
+            <div class="variant-card__render">
+                <Fretboard Tuning="@DropD" ActiveChord="@AMinor" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;Fretboard Tuning="@@DropD" ActiveChord="@@aMinor" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Tuning:
+                <select @bind="_playgroundTuningName">
+                    @foreach (var p in TuningService.Presets)
+                    {
+                        <option value="@p.Name">@p.Name</option>
+                    }
+                </select>
+            </label>
+            <label>
+                Active chord:
+                <select @bind="_playgroundChordKey">
+                    <option value="">(none)</option>
+                    @foreach (var (key, _) in PlaygroundChordOptions)
+                    {
+                        <option value="@key">@key</option>
+                    }
+                </select>
+            </label>
+            <span>Tuning notes: <strong>@string.Join(" ", PlaygroundTuning.MidiNotes)</strong></span>
+        </div>
+        <div class="playground__render">
+            <Fretboard Tuning="@PlaygroundTuning"
+                       ActiveChord="@PlaygroundChord"
+                       TuningChanged="OnPlaygroundTuningChanged" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly ChordType MajorType = MusicTheoryService.ChordTypes.First(t => t.Symbol == "");
+    private static readonly ChordType MinorType = MusicTheoryService.ChordTypes.First(t => t.Symbol == "m");
+
+    private static readonly NoteChord CMajor = new("C", MajorType);
+    private static readonly NoteChord AMinor = new("A", MinorType);
+
+    private static readonly TuningPreset DropD =
+        TuningService.Presets.First(p => p.Name == "Drop D (DADGBE)");
+
+    private static readonly (string Key, NoteChord Chord)[] PlaygroundChordOptions =
+    [
+        ("C major", CMajor),
+        ("A minor", AMinor),
+        ("G major", new NoteChord("G", MajorType)),
+        ("E minor", new NoteChord("E", MinorType)),
+    ];
+
+    private string _playgroundTuningName = TuningService.Standard.Name;
+    private string _playgroundChordKey = "";
+
+    private TuningPreset PlaygroundTuning =>
+        TuningService.Presets.FirstOrDefault(p => p.Name == _playgroundTuningName)
+        ?? TuningService.Standard;
+
+    private NoteChord? PlaygroundChord =>
+        string.IsNullOrEmpty(_playgroundChordKey)
+            ? null
+            : PlaygroundChordOptions.First(o => o.Key == _playgroundChordKey).Chord;
+
+    private void OnPlaygroundTuningChanged(TuningPreset preset)
+    {
+        // Live-edited string notes flip the preset name to "Custom"; track it here too.
+        _playgroundTuningName = preset.Name;
+    }
+}

@@ -60,6 +60,13 @@ public static class LibraryRegistry
             Group: LibraryGroup.Components,
             DemoType: typeof(ChordWheelDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ChordWheel.razor"),
+        new(
+            Slug: "fretboard",
+            Title: "Fretboard",
+            Description: "12-fret SVG with audio, MIDI input, scale overlay, position selector, manual dots, and tuning controls.",
+            Group: LibraryGroup.Components,
+            DemoType: typeof(FretboardDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Fretboard.razor"),
     };
 
     public static LibraryEntry? FindBySlug(LibraryGroup group, string slug)
