@@ -12,6 +12,13 @@ public static class LibraryRegistry
     public static IReadOnlyList<LibraryEntry> All { get; } = new List<LibraryEntry>
     {
         new(
+            Slug: "chord-builder-panel",
+            Title: "ChordBuilderPanel",
+            Description: "Built-up chord accumulator with removable note chips, stability cluster at 3+ notes, and chord summary.",
+            Group: LibraryGroup.Components,
+            DemoType: typeof(ChordBuilderPanelDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ChordBuilderPanel.razor"),
+        new(
             Slug: "mood-legend",
             Title: "MoodLegend",
             Description: "Row of mood filter chips driven by MusicTheoryService.MoodColors.",

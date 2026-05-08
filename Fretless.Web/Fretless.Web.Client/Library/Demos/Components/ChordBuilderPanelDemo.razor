@@ -1,0 +1,74 @@
+@namespace Fretless.Web.Client.Library.Demos.Components
+@using Fretless.Web.Client.Models
+
+<LibraryFrame Title="ChordBuilderPanel"
+              Description="Accumulator panel: shows BuiltNotes as removable chips, surfaces a HarmonicStabilityDisplay once 3+ notes are present, and adds a chord summary (name, mood-colored type badge, intervals) when ActiveChord is set."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/ChordBuilderPanel.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Empty</h3>
+            <div class="variant-card__render">
+                <ChordBuilderPanel BuiltNotes="@(new List<string>())" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ChordBuilderPanel BuiltNotes="new()" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Three notes built (C E G)</h3>
+            <div class="variant-card__render">
+                <ChordBuilderPanel BuiltNotes="@(new List<string> { "C", "E", "G" })" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ChordBuilderPanel BuiltNotes="[ &quot;C&quot;, &quot;E&quot;, &quot;G&quot; ]" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">With ActiveChord (C major)</h3>
+            <div class="variant-card__render">
+                <ChordBuilderPanel BuiltNotes="@(new List<string> { "C", "E", "G" })"
+                                   ActiveChord="CMajor" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;ChordBuilderPanel BuiltNotes="[…]" ActiveChord="cMajor" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <button type="button" @onclick="AddNote">Add note</button>
+            <button type="button" @onclick="RemoveLast" disabled="@(_playgroundNotes.Count == 0)">Remove last</button>
+            <button type="button" @onclick="ClearAll" disabled="@(_playgroundNotes.Count == 0)">Clear</button>
+            <span>Built: <strong>@(_playgroundNotes.Count == 0 ? "(none)" : string.Join(" ", _playgroundNotes))</strong></span>
+        </div>
+        <div class="playground__render">
+            <ChordBuilderPanel BuiltNotes="_playgroundNotes"
+                               ActiveChord="@(_playgroundNotes.Count == 3 ? CMajor : null)"
+                               NoteRemoved="OnPlaygroundRemoved" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly ChordType MajorType = MusicTheoryService.ChordTypes.First(t => t.Symbol == "");
+    private static readonly NoteChord CMajor = new("C", MajorType);
+    private static readonly string[] CycleNotes = ["C", "E", "G", "B", "D", "F", "A"];
+
+    private List<string> _playgroundNotes = [];
+
+    private void AddNote()
+    {
+        var next = CycleNotes[_playgroundNotes.Count % CycleNotes.Length];
+        _playgroundNotes.Add(next);
+    }
+
+    private void RemoveLast()
+    {
+        if (_playgroundNotes.Count > 0)
+        {
+            _playgroundNotes.RemoveAt(_playgroundNotes.Count - 1);
+        }
+    }
+
+    private void ClearAll() => _playgroundNotes.Clear();
+
+    private void OnPlaygroundRemoved(string note) => _playgroundNotes.Remove(note);
+}
