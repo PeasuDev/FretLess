@@ -43,31 +43,6 @@
     gap: 0.35rem;
 }
 
-.fretboard-position-btn {
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 6px;
-    background: #ffffff;
-    color: #000000;
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 0.25rem 0.5rem;
-    min-width: 2.2rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.fretboard-position-btn:hover {
-    background: #f0f0f0;
-    transform: translateY(-1px);
-}
-
-.fretboard-position-btn.active {
-    background: #FFD700;
-    color: #000000;
-    border-color: #FFD700;
-    font-weight: 700;
-}
-
 .fretboard-audio-row {
     width: 100%;
     max-width: 760px;

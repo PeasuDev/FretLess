@@ -18,19 +18,17 @@
         <div class="fretboard-position-row">
             <span class="fretboard-position-label">Position:</span>
             <div class="fretboard-position-buttons">
-                <button class="fretboard-position-btn @(SelectedPosition == null ? "active" : "")" 
-                        @onclick="() => SelectPosition(null)">
-                    All
-                </button>
+                <RomanNumeralButton Numeral="All"
+                                    Active="@(SelectedPosition == null)"
+                                    OnClick="() => SelectPosition(null)" />
                 @foreach (var (degree, index) in GetScaleDegrees())
                 {
                     if (index == 7) continue;
 
                     var degreeCapture = degree;
-                    <button class="fretboard-position-btn @(SelectedPosition == degree ? "active" : "")" 
-                            @onclick="() => SelectPosition(degreeCapture)">
-                        @GetRomanNumeral(index)
-                    </button>
+                    <RomanNumeralButton Numeral="@GetRomanNumeral(index)"
+                                        Active="@(SelectedPosition == degree)"
+                                        OnClick="() => SelectPosition(degreeCapture)" />
                 }
             </div>
         </div>

@@ -1,0 +1,65 @@
+@namespace Fretless.Web.Client.Library.Demos.Atoms
+
+<LibraryFrame Title="RomanNumeralButton"
+              Description="Compact pill-shaped button used for scale-degree position selection. White by default, gold when Active. Numeral is any short string ('I', 'IV', 'All', etc.) so the same atom serves both labelled and numeric positions. Used by Fretboard's position selector. SpiralWheel's overlay-position buttons are out of scope (separate extraction)."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Atoms/RomanNumeralButton.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Inactive — I</h3>
+            <div class="variant-card__render">
+                <RomanNumeralButton Numeral="I" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;RomanNumeralButton Numeral="I" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Active — IV</h3>
+            <div class="variant-card__render">
+                <RomanNumeralButton Numeral="IV" Active="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;RomanNumeralButton Numeral="IV" Active="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Row — All + I–VII (Fretboard pattern)</h3>
+            <div class="variant-card__render">
+                <div style="display:flex;flex-wrap:wrap;gap:0.35rem;">
+                    @foreach (var label in new[] { "All", "I", "II", "III", "IV", "V", "VI", "VII" })
+                    {
+                        <RomanNumeralButton Numeral="@label" Active="@(label == "I")" />
+                    }
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>foreach: &lt;RomanNumeralButton Numeral="…" Active="…" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            @foreach (var label in PlaygroundLabels)
+            {
+                <RomanNumeralButton Numeral="@label"
+                                    Active="@(_active == label)"
+                                    OnClick="() => OnSelect(label)" />
+            }
+            <span>Active: <strong>@_active</strong></span>
+            <span>Clicks: <strong>@_clickCount</strong></span>
+        </div>
+        <div class="playground__render">
+            <div style="color:#888;font-size:0.85rem;">Click any button above. The Active state mirrors a real position-selector flow.</div>
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly string[] PlaygroundLabels = ["All", "I", "ii", "iii", "IV", "V", "vi", "vii°"];
+    private string _active = "All";
+    private int _clickCount;
+
+    private void OnSelect(string label)
+    {
+        _active = label;
+        _clickCount++;
+    }
+}

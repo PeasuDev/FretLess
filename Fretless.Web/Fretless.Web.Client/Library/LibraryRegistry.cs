@@ -27,6 +27,13 @@ public static class LibraryRegistry
             DemoType: typeof(NoteChipDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/NoteChip.razor"),
         new(
+            Slug: "roman-numeral-button",
+            Title: "RomanNumeralButton",
+            Description: "Position-selector button: white pill, gold-Active. Numeral accepts any short label (I, IV, All, etc.).",
+            Group: LibraryGroup.Atoms,
+            DemoType: typeof(RomanNumeralButtonDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/RomanNumeralButton.razor"),
+        new(
             Slug: "scale-note-chip",
             Title: "ScaleNoteChip",
             Description: "Small pill labeling a scale degree; gold for root, cyan glow for playing.",
