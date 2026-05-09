@@ -70,6 +70,13 @@ public static class LibraryRegistry
             DemoType: typeof(StringTuningRowDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Atoms/StringTuningRow.razor"),
         new(
+            Slug: "fretboard-view",
+            Title: "FretboardView",
+            Description: "Stateless 12-fret SVG renderer with scale / chord / manual-dot / MIDI overlays; tuning ▲/▼ buttons surface as OnStringShifted.",
+            Group: LibraryGroup.Primitives,
+            DemoType: typeof(FretboardViewDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Primitives/FretboardView.razor"),
+        new(
             Slug: "note-circle-view",
             Title: "NoteCircleView",
             Description: "Stateless 12-segment circle-of-fifths SVG wheel; selection, key-role coloring, MIDI highlights, complementary outline driven by params.",

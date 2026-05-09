@@ -1,0 +1,109 @@
+@namespace Fretless.Web.Client.Library.Demos.Primitives
+@using Fretless.Web.Client.Models
+
+<LibraryFrame Title="FretboardView"
+              Description="Stateless 12-fret SVG renderer. Inputs drive the visual: Tuning sets the strings, HighlightedSemitones + RootSemitone draw the scale dots (gold for root), ManualDots paints user-toggled markers, ChordDots+ChordColor paints the chord overlay, MidiActiveMidiNotes rings active MIDI inputs, OpenMutedStrings places ✕ in the nut. Outputs OnFretClicked and OnStringShifted (▲/▼). Pure renderer — no audio, no MIDI subscription, no service injection."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Primitives/FretboardView.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Default — Standard EADGBE, no overlays</h3>
+            <div class="variant-card__render">
+                <FretboardView Tuning="@TuningService.Standard" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;FretboardView Tuning="@@TuningService.Standard" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">C major scale (Ionian) overlay</h3>
+            <div class="variant-card__render">
+                <FretboardView Tuning="@TuningService.Standard"
+                               HighlightedSemitones="@CMajorSemitones"
+                               RootSemitone="0" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;FretboardView … HighlightedSemitones="[0,2,4,5,7,9,11]" RootSemitone="0" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">C major chord overlay (mood-colored dots)</h3>
+            <div class="variant-card__render">
+                <FretboardView Tuning="@TuningService.Standard"
+                               ChordDots="@CMajorChordDots"
+                               ChordColor="#5e8a5e"
+                               OpenMutedStrings="@CMajorOpenMuted" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;FretboardView … ChordDots="…" ChordColor="#5e8a5e" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Manual dots — playground mode</h3>
+            <div class="variant-card__render">
+                <FretboardView Tuning="@TuningService.Standard"
+                               ManualDots="@TwoManualDots" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;FretboardView … ManualDots="[(2,3),(4,5)]" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Tuning:
+                <select @bind="_tuningName">
+                    @foreach (var p in TuningService.Presets)
+                    {
+                        <option value="@p.Name">@p.Name</option>
+                    }
+                </select>
+            </label>
+            <span>Last fret click: <strong>@_lastFretClick</strong></span>
+            <span>Last string shift: <strong>@_lastStringShift</strong></span>
+            <button type="button" @onclick="() => _playgroundManualDots = []">Clear dots</button>
+        </div>
+        <div class="playground__render">
+            <FretboardView Tuning="@PlaygroundTuning"
+                           ManualDots="_playgroundManualDots"
+                           OnFretClicked="OnPlaygroundFret"
+                           OnStringShifted="OnPlaygroundShift" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly int[] CMajorSemitones = [0, 2, 4, 5, 7, 9, 11];
+    private static readonly (int StringIndex, int Fret, int NoteIndex)[] CMajorChordDots =
+    [
+        (1, 3, 0), // A string, fret 3 → C
+        (2, 2, 4), // D string, fret 2 → E
+        (3, 0, 7), // G string, open → G
+    ];
+    private static readonly (string Symbol, int StringIndex)[] CMajorOpenMuted =
+    [
+        ("✕", 0), // low E muted (not in C major chord notes by open-string)
+        ("✕", 5), // high E muted
+    ];
+    private static readonly (int StringIndex, int Fret)[] TwoManualDots = [(2, 3), (4, 5)];
+
+    private string _tuningName = TuningService.Standard.Name;
+    private List<(int StringIndex, int Fret)> _playgroundManualDots = [];
+    private string _lastFretClick = "(none)";
+    private string _lastStringShift = "(none)";
+
+    private TuningPreset PlaygroundTuning =>
+        TuningService.Presets.FirstOrDefault(p => p.Name == _tuningName) ?? TuningService.Standard;
+
+    private void OnPlaygroundFret((int StringIndex, int Fret) e)
+    {
+        _lastFretClick = $"string {e.StringIndex}, fret {e.Fret}";
+        var key = (e.StringIndex, e.Fret);
+        if (!_playgroundManualDots.Remove(key))
+        {
+            _playgroundManualDots.Add(key);
+        }
+    }
+
+    private void OnPlaygroundShift((int StringIndex, int Semitones) e)
+    {
+        _lastStringShift = $"string {e.StringIndex}, {(e.Semitones > 0 ? "+" : "")}{e.Semitones}";
+    }
+}

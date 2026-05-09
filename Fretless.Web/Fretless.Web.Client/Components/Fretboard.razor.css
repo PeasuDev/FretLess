@@ -74,47 +74,6 @@
     flex-shrink: 0;
 }
 
-.fretboard {
-    width: 100%;
-    min-width: 380px;
-    max-width: 760px;
-    height: auto;
-    border-radius: 6px;
-}
-
-.fret-dot {
-    transition: opacity 0.12s;
-}
-
-.fret-dot:hover {
-    opacity: 0.8;
-}
-
-.scale-dot {
-    transition: opacity 0.15s;
-}
-
-.fretboard-note-dots circle,
-.fretboard-note-dots text {
-    opacity: 1;
-}
-
-.scale-dot:hover circle {
-    opacity: 1 !important;
-}
-
-.tuning-btn rect {
-    transition: fill 0.1s;
-}
-
-.tuning-btn:hover rect {
-    fill: rgba(255, 215, 0, 0.18);
-}
-
-.tuning-btn:hover text {
-    fill: #FFD700;
-}
-
 .fretboard-legend {
     display: flex;
     gap: 0.5rem;
