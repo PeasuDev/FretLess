@@ -1,0 +1,116 @@
+@namespace Fretless.Web.Client.Library.Demos.Tokens
+@using Fretless.Web.Client.Models
+
+<LibraryFrame Title="Design Tokens"
+              Description="Read-only inventory of the visual primitives the app uses today: mood colors, the 12-step note-hue circle, accent palette, type stack, and SVG label-size samples. Sourced from MusicTheoryService and the existing scoped CSS. Phase C will migrate components to a central tokens.css; this page makes the current state legible."
+              SourcePath="Fretless.Web/Fretless.Web.Client/MusicTheoryService.cs (+ scoped CSS files)">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Mood colors — MusicTheoryService.MoodColors</h3>
+            <div class="variant-card__render">
+                <div class="token-row">
+                    @foreach (var (mood, color) in MusicTheoryService.MoodColors)
+                    {
+                        <div class="token-swatch">
+                            <div class="token-swatch__chip" style="background:@color"></div>
+                            <div class="token-swatch__label">@mood</div>
+                            <div class="token-swatch__hex">@color</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Note hues — Circle of Fifths × 30°</h3>
+            <div class="variant-card__render">
+                <div class="token-row">
+                    @foreach (var (note, idx) in MusicTheoryService.CircleOfFifths.Select((n, i) => (n, i)))
+                    {
+                        <div class="token-swatch">
+                            <div class="token-swatch__chip" style="background:@MusicTheoryService.NoteColor(idx, 55, 38)"></div>
+                            <div class="token-swatch__label">@MusicTheoryService.DisplayName(note)</div>
+                            <div class="token-swatch__hex">hsl(@(idx * 30), 55%, 38%)</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Accent palette</h3>
+            <div class="variant-card__render">
+                <div class="token-row">
+                    @foreach (var (name, hex, blurb) in AccentColors)
+                    {
+                        <div class="token-swatch">
+                            <div class="token-swatch__chip" style="background:@hex"></div>
+                            <div class="token-swatch__label">@name</div>
+                            <div class="token-swatch__hex">@hex</div>
+                            <div class="token-swatch__blurb">@blurb</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Type stack</h3>
+            <div class="variant-card__render">
+                <div class="token-type-stack">
+                    <p style="font-size:1.4rem;font-weight:800;">The quick brown fox — heading 800</p>
+                    <p style="font-size:1.05rem;font-weight:700;">Body emphasis — 700</p>
+                    <p style="font-size:0.95rem;font-weight:400;">Default body text — 400</p>
+                    <p style="font-size:0.78rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Tag label — 600 + tracking + uppercase</p>
+                    <p style="font-size:0.68rem;font-weight:700;font-style:italic;color:rgba(200,200,200,0.6);">Footnote — 700 italic muted</p>
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>'Helvetica Neue', Helvetica, Arial, sans-serif</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">SVG label sizes — sampled from Fretboard / SpiralWheel / NoteCircleView</h3>
+            <div class="variant-card__render">
+                <div class="token-row">
+                    @foreach (var (size, where) in SvgLabelSizes)
+                    {
+                        <div class="token-swatch">
+                            <svg viewBox="0 0 80 56" class="token-svg-sample">
+                                <text x="40" y="28" text-anchor="middle" dominant-baseline="central"
+                                      font-family="'Helvetica Neue', sans-serif" font-weight="700"
+                                      font-size="@size.ToString(System.Globalization.CultureInfo.InvariantCulture)" fill="#fff">Aa</text>
+                            </svg>
+                            <div class="token-swatch__label">@size px</div>
+                            <div class="token-swatch__blurb">@where</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </Variants>
+</LibraryFrame>
+
+@code {
+    private static readonly (string Name, string Hex, string Blurb)[] AccentColors =
+    [
+        ("Gold",         "#FFD700", "Selection / root / active states"),
+        ("Cyan",         "#00e5ff", "Playing / live MIDI notes"),
+        ("Highlight",    "#ffffff", "Selected white-state surfaces"),
+        ("Library bg",   "#0d0d0d", "Library sidebar background"),
+        ("Canvas",       "#000000", "App canvas background"),
+        ("Muted text",   "#999999", "Secondary uppercase labels"),
+        ("Mood-card border", "rgba(255,215,0,0.18)", "Library frame separators"),
+    ];
+
+    private static readonly (double Size, string Where)[] SvgLabelSizes =
+    [
+        (6,    "Fretboard scale-degree dots"),
+        (7,    "SpiralWheel mini-fretboard frets"),
+        (8,    "Fretboard tuning labels, NoteCircleView labels"),
+        (9,    "Fretboard fret numbers"),
+        (11,   "Fretboard open-muted ✕"),
+        (13.5, "SpiralWheel surface labels"),
+        (22,   "SpiralWheel center hub key label"),
+    ];
+}

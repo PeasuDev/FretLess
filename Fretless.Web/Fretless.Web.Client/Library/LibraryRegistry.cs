@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Fretless.Web.Client.Library.Demos.Atoms;
 using Fretless.Web.Client.Library.Demos.Components;
 using Fretless.Web.Client.Library.Demos.Primitives;
+using Fretless.Web.Client.Library.Demos.Tokens;
 
 namespace Fretless.Web.Client.Library;
 
@@ -188,6 +189,13 @@ public static class LibraryRegistry
             Group: LibraryGroup.Components,
             DemoType: typeof(SpiralWheelDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/SpiralWheel.razor"),
+        new(
+            Slug: "design-tokens",
+            Title: "Design Tokens",
+            Description: "Read-only swatches and type samples covering moods, note hues, accent palette, type stack, and SVG label sizes.",
+            Group: LibraryGroup.Tokens,
+            DemoType: typeof(DesignTokensDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Library/Demos/Tokens/DesignTokensDemo.razor"),
     };
 
     public static LibraryEntry? FindBySlug(LibraryGroup group, string slug)
