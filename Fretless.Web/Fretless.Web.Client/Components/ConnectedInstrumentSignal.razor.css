@@ -28,7 +28,7 @@
 
 .spiral-connected-note-value {
     color: #00e5ff;
-    font-size: 1.3rem;
+    font-size: 2.15rem;
     font-weight: 900;
     line-height: 1;
     letter-spacing: 0.04em;
@@ -43,6 +43,27 @@
     letter-spacing: 0.03em;
 }
 
+.spiral-connected-device {
+    display: grid;
+    gap: 0.12rem;
+    color: rgba(255,255,255,0.72);
+}
+
+.spiral-connected-device-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.spiral-connected-device-name {
+    color: rgba(255,255,255,0.9);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    overflow-wrap: anywhere;
+}
+
 .spiral-signal-waveform {
     display: block;
     width: 100%;
@@ -53,10 +74,62 @@
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 
+.spiral-signal-row {
+    display: flex;
+    align-items: center;
+    gap: 0.42rem;
+}
+
+.spiral-gain-indicator {
+    width: 0.72rem;
+    height: 0.72rem;
+    border: 1px solid rgba(255,255,255,0.34);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.22);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.04);
+    flex: 0 0 auto;
+}
+
+.spiral-gain-indicator.clean {
+    border-color: rgba(81,207,102,0.8);
+    background: #51cf66;
+    box-shadow: 0 0 10px rgba(81,207,102,0.7);
+}
+
+.spiral-gain-indicator.clipping {
+    border-color: rgba(255,107,107,0.85);
+    background: #ff6b6b;
+    box-shadow: 0 0 10px rgba(255,107,107,0.78);
+}
+
 .spiral-signal-status {
     color: rgba(255,255,255,0.72);
     font-size: 0.66rem;
     font-weight: 800;
     letter-spacing: 0.07em;
     text-transform: uppercase;
+}
+
+.spiral-pitch-guidance {
+    display: grid;
+    gap: 0.16rem;
+    padding: 0.45rem 0.5rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    background: rgba(0,0,0,0.18);
+}
+
+.spiral-pitch-guidance-status {
+    color: #ffd43b;
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+.spiral-pitch-guidance-detail {
+    color: rgba(255,255,255,0.74);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.25;
 }

@@ -106,7 +106,7 @@
 
     private async Task ConnectInstrumentAsync()
     {
-        _isAnalogInputEnabled = await AudioInput.StartAsync(JS, _selectedRecordingMethod);
+        _isAnalogInputEnabled = await AudioInput.StartAsync(JS, _selectedRecordingMethod, _selectedInstrumentKind);
         if (_isAnalogInputEnabled)
         {
             _connectedInstrumentKind = _selectedInstrumentKind;

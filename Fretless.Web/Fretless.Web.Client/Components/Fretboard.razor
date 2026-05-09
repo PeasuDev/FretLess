@@ -1,6 +1,7 @@
 @using Fretless.Web.Client.Models
 @inject IJSRuntime JS
 @inject MidiService Midi
+@inject AudioInputNoteService AudioInput
 @implements IAsyncDisposable
 
 <div class="fretboard-container">
@@ -239,19 +240,23 @@
                 @SvgText(BtnAreaWidth + NutWidth / 2.0, cy, "9", "font-family:'Helvetica Neue',sans-serif;fill:#aaaaaa;opacity:0.7", label)
             }
         }
-        @* MIDI active note highlights *@
-        @if (_midiActiveNotes.Count > 0)
+        @* Active input note highlights *@
+        @if (_activeInputNotes.Count > 0)
         {
+            var activeInputNoteIndexes = ActiveInputNoteIndexes;
             @for (int s = 0; s < StringCount; s++)
             {
                 for (int f = 0; f <= FretCount; f++)
                 {
                     var midi = OpenStringNotes[s] + f;
-                    if (!_midiActiveNotes.Contains(midi)) continue;
+                    var noteIdx = midi % 12;
+                    if (!activeInputNoteIndexes.Contains(noteIdx)) continue;
                     var cx = BtnAreaWidth + (f == 0 ? NutWidth / 2.0 : NutWidth + (f - 0.5) * FretWidth);
                     var cy = 10 + (StringCount - 1 - s) * StringSpacing + StringSpacing / 2.0;
+                    var indicatorStroke = PlayingIndicatorStroke(noteIdx);
+                    var indicatorFill = PlayingIndicatorFill(noteIdx, 0.25);
                     <circle cx="@cx.ToInvariant()" cy="@cy.ToInvariant()" r="10"
-                            fill="rgba(255,255,255,0.25)" stroke="#ffffff" stroke-width="2"
+                            fill="@indicatorFill" stroke="@indicatorStroke" stroke-width="2"
                             style="pointer-events:none" />
                 }
             }
@@ -282,7 +287,7 @@
     private readonly HashSet<(int S, int F)> _manualDots = [];
     private double _volume = 0.72;
     private bool _isMuted;
-    private readonly HashSet<int> _midiActiveNotes = [];
+    private readonly Dictionary<int, ActiveInputNote> _activeInputNotes = [];
 
     private TuningPreset ActiveTuning => Tuning ?? TuningService.Standard;
 
@@ -292,19 +297,33 @@
         {
             Midi.NoteOn  += OnMidiNoteOn;
             Midi.NoteOff += OnMidiNoteOff;
+            AudioInput.NoteOn += OnAudioInputNoteOn;
+            AudioInput.NoteOff += OnAudioInputNoteOff;
             await Midi.InitAsync(JS);
         }
     }
 
-    private void OnMidiNoteOn(int midi)
+    private void OnMidiNoteOn(int midi) => AddActiveInputNote(midi, InputNoteSource.Midi);
+
+    private void OnMidiNoteOff(int midi) => RemoveActiveInputNote(midi);
+
+    private void OnAudioInputNoteOn(int midi) => AddActiveInputNote(midi, InputNoteSource.Audio);
+
+    private void OnAudioInputNoteOff(int midi) => RemoveActiveInputNote(midi);
+
+    private void AddActiveInputNote(int midi, InputNoteSource source)
     {
-        _midiActiveNotes.Add(midi);
+        _activeInputNotes[midi] = new ActiveInputNote(midi, source, DateTimeOffset.UtcNow);
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnMidiNoteOff(int midi)
+    private void RemoveActiveInputNote(int midi)
     {
-        _midiActiveNotes.Remove(midi);
+        if (_activeInputNotes.Remove(midi, out var activeNote))
+        {
+            _ = DateTimeOffset.UtcNow - activeNote.StartedAt;
+        }
+
         InvokeAsync(StateHasChanged);
     }
 
@@ -312,6 +331,8 @@
     {
         Midi.NoteOn  -= OnMidiNoteOn;
         Midi.NoteOff -= OnMidiNoteOff;
+        AudioInput.NoteOn -= OnAudioInputNoteOn;
+        AudioInput.NoteOff -= OnAudioInputNoteOff;
         return ValueTask.CompletedTask;
     }
 
@@ -323,8 +344,19 @@
 
     private int StringCount => ActiveTuning.StringCount;
     private int[] OpenStringNotes => ActiveTuning.MidiNotes;
+    private HashSet<int> ActiveInputNoteIndexes => _activeInputNotes.Keys
+        .Select(static midi => midi % 12)
+        .ToHashSet();
 
     private record FretDot(int StringIndex, int Fret, int NoteIndex);
+
+    private enum InputNoteSource
+    {
+        Midi,
+        Audio
+    }
+
+    private sealed record ActiveInputNote(int Midi, InputNoteSource Source, DateTimeOffset StartedAt);
 
     private NoteChord? _cachedChord;
     private TuningPreset? _cachedChordTuning;
@@ -421,6 +453,14 @@
         var noteName = TuningService.MidiLabel(clampedMidi);
         await JS.InvokeVoidAsync("fretlessAudio.playNote", noteName);
     }
+
+    private string PlayingIndicatorStroke(int noteIndex) => InternalScale is null
+        ? "#ffffff"
+        : InternalScale.NoteSet.Contains(noteIndex) ? "#36d66b" : "#ff4d4d";
+
+    private string PlayingIndicatorFill(int noteIndex, double alpha) => InternalScale is null
+        ? $"rgba(255,255,255,{alpha.ToInvariant()})"
+        : InternalScale.NoteSet.Contains(noteIndex) ? $"rgba(54,214,107,{alpha.ToInvariant()})" : $"rgba(255,77,77,{alpha.ToInvariant()})";
 
     private async Task OnVolumeInput(ChangeEventArgs e)
     {

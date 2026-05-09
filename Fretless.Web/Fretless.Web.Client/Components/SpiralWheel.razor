@@ -282,7 +282,12 @@
                     <ConnectedInstrumentSignal InstrumentName="@_connectedInstrumentName"
                                                NoteLabel="@CurrentInputNoteLabel"
                                                NoteDetail="@CurrentInputDetail"
+                                               InputDeviceName="@_connectedInputDeviceName"
                                                SignalStatus="@CurrentSignalStatus"
+                                               PitchStatus="@_pitchDetectionStatus"
+                                               PitchDetail="@_pitchDetectionDetail"
+                                               GainStatus="@_gainStatus"
+                                               GainStatusDetail="@_gainStatusDetail"
                                                @ref="_connectedInstrumentSignal" />
                 }
 
@@ -398,7 +403,7 @@
 
                                             var cx = fret == 0 ? 10 : 20 + (fret - 0.5) * 24;
                                             var isRoot = !string.IsNullOrWhiteSpace(_selectedKey) && overlayRoot >= 0 && semitone == overlayRoot;
-                                            var dotFill = isPlayingScaleNote ? "#00e5ff" : isRoot ? "#ffd700" : isHighlighted ? "#ffffff" : "#555555";
+                                            var dotFill = isPlayingScaleNote ? PlayingIndicatorFill(semitone) : isRoot ? "#ffd700" : isHighlighted ? "#ffffff" : "#555555";
                                             var dotOpacity = isPlayingScaleNote ? "1" : isRoot ? "0.98" : isHighlighted ? "1" : "0.25";
                                             var dotStroke = isPlayingScaleNote ? "#ffffff" : "none";
                                             var dotStrokeWidth = isPlayingScaleNote ? "1.8" : "0";
@@ -469,7 +474,7 @@
                                     var isSelected = overlaySemitones.Contains(whiteSemitone);
                                     var isRoot = !string.IsNullOrWhiteSpace(_selectedKey) && overlayRoot >= 0 && whiteSemitone == overlayRoot;
                                     var isPlayingScaleNote = IsSemitonePlaying(whiteSemitone);
-                                    var fill = isPlayingScaleNote ? "#00e5ff" : isRoot ? "#ffd700" : isSelected ? "#ffffff" : "#2a2a2a";
+                                    var fill = isPlayingScaleNote ? PlayingIndicatorFill(whiteSemitone) : isRoot ? "#ffd700" : isSelected ? "#ffffff" : "#2a2a2a";
                                     var stroke = isPlayingScaleNote ? "#ffffff" : "none";
                                     var strokeWidth = isPlayingScaleNote ? "2.2" : "0";
                                     var label = ChromaticSemitoneLabel(whiteSemitone);
@@ -490,7 +495,7 @@
                                     var isSelected = overlaySemitones.Contains(blackKey.Semitone);
                                     var isRoot = !string.IsNullOrWhiteSpace(_selectedKey) && overlayRoot >= 0 && blackKey.Semitone == overlayRoot;
                                     var isPlayingScaleNote = IsSemitonePlaying(blackKey.Semitone);
-                                    var fill = isPlayingScaleNote ? "#00e5ff" : isRoot ? "#ffd700" : isSelected ? "#ffffff" : "#111111";
+                                    var fill = isPlayingScaleNote ? PlayingIndicatorFill(blackKey.Semitone) : isRoot ? "#ffd700" : isSelected ? "#ffffff" : "#111111";
                                     var label = ChromaticSemitoneLabel(blackKey.Semitone);
                                     var labelFill = isSelected || isPlayingScaleNote ? "#111111" : "#ffffff";
                                     var stroke = isPlayingScaleNote ? "#ffffff" : isSelected ? "#111111" : "none";

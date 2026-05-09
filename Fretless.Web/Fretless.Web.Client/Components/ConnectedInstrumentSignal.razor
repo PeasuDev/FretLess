@@ -9,8 +9,19 @@
             <span class="spiral-connected-note-value">@NoteLabel</span>
             <span class="spiral-connected-note-detail">@NoteDetail</span>
         </div>
+        <div class="spiral-connected-device">
+            <span class="spiral-connected-device-label">Input Device</span>
+            <span class="spiral-connected-device-name">@InputDeviceName</span>
+        </div>
         <canvas @ref="WaveformCanvas" class="spiral-signal-waveform" aria-hidden="true"></canvas>
-        <div class="spiral-signal-status">@SignalStatus</div>
+        <div class="spiral-signal-row">
+            <div class="spiral-gain-indicator @GainIndicatorClass" title="@GainStatusDetail" aria-label="Gain status: @GainStatusDetail"></div>
+            <div class="spiral-signal-status">@SignalStatus</div>
+        </div>
+        <div class="spiral-pitch-guidance">
+            <span class="spiral-pitch-guidance-status">@PitchStatus</span>
+            <span class="spiral-pitch-guidance-detail">@PitchDetail</span>
+        </div>
     </div>
 </div>
 
@@ -18,6 +29,18 @@
     [Parameter, EditorRequired] public string InstrumentName { get; set; } = string.Empty;
     [Parameter, EditorRequired] public string NoteLabel { get; set; } = string.Empty;
     [Parameter, EditorRequired] public string NoteDetail { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string InputDeviceName { get; set; } = string.Empty;
     [Parameter, EditorRequired] public string SignalStatus { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string PitchStatus { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string PitchDetail { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string GainStatus { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string GainStatusDetail { get; set; } = string.Empty;
     [Parameter] public ElementReference WaveformCanvas { get; set; }
+
+    private string GainIndicatorClass => GainStatus switch
+    {
+        "clipping" => "clipping",
+        "clean" or "boosting" => "clean",
+        _ => "idle"
+    };
 }

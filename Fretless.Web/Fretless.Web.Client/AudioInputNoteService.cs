@@ -19,16 +19,25 @@ public sealed class AudioInputNoteService : IAsyncDisposable
     /// <summary>Fired when the detector measures an input signal frame.</summary>
     public event Action<double>? LevelDetected;
 
+    /// <summary>Fired when the browser reports the audio input device being monitored.</summary>
+    public event Action<string>? InputDeviceDetected;
+
+    /// <summary>Fired when the browser reports pitch-detection quality or guidance.</summary>
+    public event Action<string, string>? PitchStatusChanged;
+
+    /// <summary>Fired when the browser reports input gain quality or adjustment.</summary>
+    public event Action<string, string>? GainStatusChanged;
+
     private DotNetObjectReference<AudioInputNoteService>? _dotNetRef;
     private IJSRuntime? _js;
     private bool _started;
 
     /// <summary>Requests audio input access and begins lightweight monophonic pitch detection.</summary>
-    public async Task<bool> StartAsync(IJSRuntime js, string recordingMethod = "Microphone")
+    public async Task<bool> StartAsync(IJSRuntime js, string recordingMethod = "Microphone", string instrument = "")
     {
         _js = js;
         _dotNetRef ??= DotNetObjectReference.Create(this);
-        _started = await js.InvokeAsync<bool>("fretlessAudioInput.start", _dotNetRef, recordingMethod);
+        _started = await js.InvokeAsync<bool>("fretlessAudioInput.start", _dotNetRef, recordingMethod, instrument);
         return _started;
     }
 
@@ -60,6 +69,18 @@ public sealed class AudioInputNoteService : IAsyncDisposable
     /// <summary>Called by JS when audio input measures a signal frame.</summary>
     [JSInvokable]
     public void OnAudioInputLevelDetected(double rms) => LevelDetected?.Invoke(rms);
+
+    /// <summary>Called by JS when audio input starts monitoring a browser input device.</summary>
+    [JSInvokable]
+    public void OnAudioInputDeviceDetected(string deviceName) => InputDeviceDetected?.Invoke(deviceName);
+
+    /// <summary>Called by JS when pitch detection status or user guidance changes.</summary>
+    [JSInvokable]
+    public void OnAudioInputPitchStatusChanged(string status, string detail) => PitchStatusChanged?.Invoke(status, detail);
+
+    /// <summary>Called by JS when input gain status or user guidance changes.</summary>
+    [JSInvokable]
+    public void OnAudioInputGainStatusChanged(string status, string detail) => GainStatusChanged?.Invoke(status, detail);
 
     public async ValueTask DisposeAsync()
     {

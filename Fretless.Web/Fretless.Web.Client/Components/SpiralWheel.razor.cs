@@ -162,11 +162,16 @@ public partial class SpiralWheel
     private double? _currentInputFrequency;
     private double? _currentInputLevel;
     private string? _connectedInstrumentName;
+    private string _connectedInputDeviceName = "Detecting input device";
+    private string _pitchDetectionStatus = "Waiting for pitch";
+    private string _pitchDetectionDetail = "Use a clean single-note signal for best results.";
+    private string _gainStatus = "none";
+    private string _gainStatusDetail = "Waiting for input";
     private ConnectedInstrumentSignal? _connectedInstrumentSignal;
     private bool _waveformCanvasAttached;
 
     private string CurrentInputNoteLabel => _currentInputMidi is int midi
-        ? ChromaticSemitoneLabel(midi % 12)
+        ? $"{ChromaticSemitoneLabel(midi % 12)}{midi / 12 - 1}"
         : "Listening";
 
     private string CurrentInputDetail => _currentInputFrequency is double frequency
@@ -540,6 +545,9 @@ public partial class SpiralWheel
             AudioInput.NoteOff += OnAudioInputNoteOff;
             AudioInput.PitchDetected += OnAudioInputPitchDetected;
             AudioInput.LevelDetected += OnAudioInputLevelDetected;
+            AudioInput.InputDeviceDetected += OnAudioInputDeviceDetected;
+            AudioInput.PitchStatusChanged += OnAudioInputPitchStatusChanged;
+            AudioInput.GainStatusChanged += OnAudioInputGainStatusChanged;
             InstrumentConnections.InstrumentConnected += OnInstrumentConnected;
             await Midi.InitAsync(JS);
             StateHasChanged();
@@ -753,6 +761,20 @@ public partial class SpiralWheel
     private bool IsSemitonePlaying(int semitone) =>
         _activeScalePlaybackSemitone == semitone || _midiActiveSemitones.Contains(semitone);
 
+    private bool IsSemitoneInSelectedScale(int semitone)
+    {
+        var scaleNotes = GetSelectedScaleNotes();
+        return scaleNotes is not null && scaleNotes.Contains(semitone);
+    }
+
+    private string PlayingIndicatorFill(int semitone) => GetSelectedScaleNotes() is null
+        ? "#00e5ff"
+        : IsSemitoneInSelectedScale(semitone) ? "#36d66b" : "#ff4d4d";
+
+    private string PlayingIndicatorFillAlpha(int semitone, double alpha) => GetSelectedScaleNotes() is null
+        ? $"rgba(0,229,255,{alpha.I()})"
+        : IsSemitoneInSelectedScale(semitone) ? $"rgba(54,214,107,{alpha.I()})" : $"rgba(255,77,77,{alpha.I()})";
+
     private void OnMidiNoteOff(int midi)
     {
         _activeInputMidiNotes.Remove(midi);
@@ -793,9 +815,43 @@ public partial class SpiralWheel
         InvokeAsync(StateHasChanged);
     }
 
+    private void OnAudioInputDeviceDetected(string deviceName)
+    {
+        _connectedInputDeviceName = string.IsNullOrWhiteSpace(deviceName)
+            ? "Default audio input"
+            : deviceName;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnAudioInputPitchStatusChanged(string status, string detail)
+    {
+        _pitchDetectionStatus = string.IsNullOrWhiteSpace(status)
+            ? "Listening"
+            : status;
+        _pitchDetectionDetail = string.IsNullOrWhiteSpace(detail)
+            ? "Use a clean single-note signal for best results."
+            : detail;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnAudioInputGainStatusChanged(string status, string detail)
+    {
+        _gainStatus = string.IsNullOrWhiteSpace(status)
+            ? "none"
+            : status;
+        _gainStatusDetail = string.IsNullOrWhiteSpace(detail)
+            ? "Waiting for input"
+            : detail;
+        InvokeAsync(StateHasChanged);
+    }
+
     private void OnInstrumentConnected(ConnectedInstrument connected)
     {
         _connectedInstrumentName = ConnectedInstrumentDisplayName(connected.Instrument);
+        _pitchDetectionStatus = "Listening";
+        _pitchDetectionDetail = PitchDetectionTips(connected.Instrument);
+        _gainStatus = "none";
+        _gainStatusDetail = "Waiting for input";
         _waveformCanvasAttached = false;
 
         var requestedInstrument = string.Equals(connected.Instrument, "Voice", StringComparison.OrdinalIgnoreCase)
@@ -816,6 +872,14 @@ public partial class SpiralWheel
     {
         "Guitar" => "Electric Guitar",
         _ => instrument
+    };
+
+    private static string PitchDetectionTips(string instrument) => instrument switch
+    {
+        "Guitar" => "Use a clean tone, mute unused strings, and play one note at a time.",
+        "Piano" => "Play one sustained note at a time; chords and sharp attacks can confuse pitch detection.",
+        "Voice" => "Sing or hum a steady single pitch close to the microphone.",
+        _ => "Use a clean single-note signal for best results."
     };
 
     private void AddInstrumentWidget(InstrumentType instrument)
@@ -842,6 +906,9 @@ public partial class SpiralWheel
         AudioInput.NoteOff -= OnAudioInputNoteOff;
         AudioInput.PitchDetected -= OnAudioInputPitchDetected;
         AudioInput.LevelDetected -= OnAudioInputLevelDetected;
+        AudioInput.InputDeviceDetected -= OnAudioInputDeviceDetected;
+        AudioInput.PitchStatusChanged -= OnAudioInputPitchStatusChanged;
+        AudioInput.GainStatusChanged -= OnAudioInputGainStatusChanged;
         InstrumentConnections.InstrumentConnected -= OnInstrumentConnected;
 
         // Cancel any pending debounced persist and flush a final write so the latest state lands in localStorage.

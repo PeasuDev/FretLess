@@ -184,13 +184,60 @@ window.fretlessAudioInput = (() => {
     let _quietFrames = 0;
     let _waveformCanvas = null;
     let _waveformCtx = null;
+    let _profile = null;
+    let _lastPitchStatus = '';
+    let _lastGainStatus = '';
+    let _inputGain = 1;
 
-    const MIN_FREQUENCY = 55;
-    const MAX_FREQUENCY = 1760;
-    const MIN_RMS = 0.018;
-    const NOTE_ON_STABLE_FRAMES = 3;
-    const NOTE_CHANGE_STABLE_FRAMES = 4;
-    const NOTE_OFF_QUIET_FRAMES = 8;
+    const DEFAULT_PROFILE = {
+        minFrequency: 55,
+        maxFrequency: 1760,
+        minRms: 0.018,
+        signalRms: 0.006,
+        clippingPeak: 0.96,
+        yinThreshold: 0.14,
+        autocorrelationThreshold: 0.68,
+        targetRms: 0.03,
+        maxInputGain: 8,
+        fftSize: 2048,
+        tips: 'Play one clean single note and let it ring.'
+    };
+
+    const INSTRUMENT_PROFILES = {
+        guitar: {
+            ...DEFAULT_PROFILE,
+            minFrequency: 65,
+            maxFrequency: 1400,
+            minRms: 0.012,
+            yinThreshold: 0.24,
+            autocorrelationThreshold: 0.58,
+            targetRms: 0.028,
+            maxInputGain: 10,
+            fftSize: 1024,
+            tips: 'Use a clean tone, mute unused strings, and avoid chords or heavy effects.'
+        },
+        piano: {
+            ...DEFAULT_PROFILE,
+            minFrequency: 55,
+            maxFrequency: 1760,
+            minRms: 0.02,
+            yinThreshold: 0.12,
+            tips: 'Play one sustained note at a time; piano transients and chords can confuse pitch detection.'
+        },
+        voice: {
+            ...DEFAULT_PROFILE,
+            minFrequency: 80,
+            maxFrequency: 1000,
+            minRms: 0.014,
+            yinThreshold: 0.18,
+            fftSize: 1024,
+            tips: 'Sing or hum a steady single pitch close to the microphone.'
+        }
+    };
+
+    const NOTE_ON_STABLE_FRAMES = 1;
+    const NOTE_CHANGE_STABLE_FRAMES = 2;
+    const NOTE_OFF_QUIET_FRAMES = 4;
 
     function calculateRms(buffer) {
         let rms = 0;
@@ -205,7 +252,82 @@ window.fretlessAudioInput = (() => {
         return Math.round(69 + 12 * Math.log2(frequency / 440));
     }
 
-    function drawWaveform(buffer) {
+    function getProfile(instrument) {
+        const key = String(instrument ?? '').toLowerCase();
+        return INSTRUMENT_PROFILES[key] ?? DEFAULT_PROFILE;
+    }
+
+    function calculatePeak(buffer) {
+        let peak = 0;
+        for (let i = 0; i < buffer.length; i++) {
+            peak = Math.max(peak, Math.abs(buffer[i]));
+        }
+
+        return peak;
+    }
+
+    function sendPitchStatus(status, detail) {
+        const message = `${status}|${detail}`;
+        if (!_dotNetRef || _lastPitchStatus === message) {
+            return;
+        }
+
+        _lastPitchStatus = message;
+        _dotNetRef.invokeMethodAsync('OnAudioInputPitchStatusChanged', status, detail);
+    }
+
+    function sendGainStatus(status, detail) {
+        const message = `${status}|${detail}`;
+        if (!_dotNetRef || _lastGainStatus === message) {
+            return;
+        }
+
+        _lastGainStatus = message;
+        _dotNetRef.invokeMethodAsync('OnAudioInputGainStatusChanged', status, detail);
+    }
+
+    function analyzeGain(buffer) {
+        const profile = _profile ?? DEFAULT_PROFILE;
+        const rawRms = calculateRms(buffer);
+        const rawPeak = calculatePeak(buffer);
+
+        if (rawPeak >= profile.clippingPeak) {
+            _inputGain = 1;
+            return { status: 'clipping', detail: 'Input clipping - reduce gain', rawRms, rawPeak };
+        }
+
+        if (rawRms < profile.signalRms) {
+            _inputGain = 1;
+            return { status: 'none', detail: 'No usable signal', rawRms, rawPeak };
+        }
+
+        const neededGain = profile.targetRms / rawRms;
+        const peakSafeGain = rawPeak > 0
+            ? Math.max(1, (profile.clippingPeak * 0.85) / rawPeak)
+            : profile.maxInputGain;
+        _inputGain = Math.min(profile.maxInputGain, peakSafeGain, Math.max(1, neededGain));
+
+        if (rawRms < profile.minRms && _inputGain > 1.05) {
+            return { status: 'boosting', detail: `Boosting input ${_inputGain.toFixed(1)}x`, rawRms, rawPeak };
+        }
+
+        return { status: 'clean', detail: _inputGain > 1.05 ? `Clean signal, boosted ${_inputGain.toFixed(1)}x` : 'Clean signal', rawRms, rawPeak };
+    }
+
+    function applyInputGain(buffer, gain) {
+        if (gain <= 1.001) {
+            return buffer;
+        }
+
+        const boosted = new Float32Array(buffer.length);
+        for (let i = 0; i < buffer.length; i++) {
+            boosted[i] = Math.max(-1, Math.min(1, buffer[i] * gain));
+        }
+
+        return boosted;
+    }
+
+    function drawWaveform(buffer, pitch = null) {
         if (!_waveformCanvas || !_waveformCtx || !buffer) {
             return;
         }
@@ -233,10 +355,16 @@ window.fretlessAudioInput = (() => {
         _waveformCtx.strokeStyle = gradient;
         _waveformCtx.beginPath();
 
+        const hasPitch = Number.isFinite(pitch?.frequency);
+        const rms = calculateRms(buffer);
+        const targetRms = hasPitch ? 0.34 : 0.12;
+        const maxBoost = hasPitch ? 16 : 5;
+        const visualBoost = rms > 0 ? Math.min(maxBoost, Math.max(1, targetRms / rms)) : 1;
+
         const step = Math.max(1, Math.floor(buffer.length / width));
         for (let x = 0; x < width; x++) {
             const sample = buffer[Math.min(buffer.length - 1, x * step)] || 0;
-            const y = height * 0.5 + Math.max(-1, Math.min(1, sample)) * height * 0.42;
+            const y = height * 0.5 + Math.max(-1, Math.min(1, sample * visualBoost)) * height * 0.42;
             if (x === 0) {
                 _waveformCtx.moveTo(x, y);
             } else {
@@ -247,40 +375,136 @@ window.fretlessAudioInput = (() => {
         _waveformCtx.stroke();
     }
 
-    function estimatePitch(buffer, sampleRate) {
+    function estimatePitch(buffer, sampleRate, gainAnalysis) {
         const rms = calculateRms(buffer);
-        if (rms < MIN_RMS) {
+        const profile = _profile ?? DEFAULT_PROFILE;
+        const peak = calculatePeak(buffer);
+
+        if (gainAnalysis?.status === 'clipping' || peak >= profile.clippingPeak) {
+            return { status: 'Input clipping', detail: 'Reduce interface or microphone gain for cleaner note detection.' };
+        }
+
+        if (rms < profile.signalRms) {
+            return { status: 'No signal', detail: profile.tips };
+        }
+
+        if (rms < profile.minRms) {
+            return { status: 'Signal too quiet', detail: 'Increase input gain or play a little stronger.' };
+        }
+
+        const pitch = estimatePitchWithYin(buffer, sampleRate, profile)
+            ?? estimatePitchWithAutocorrelation(buffer, sampleRate, profile);
+        if (!pitch) {
+            return { status: 'Pitch unclear', detail: profile.tips };
+        }
+
+        return { ...pitch, rms, status: 'Pitch locked', detail: 'Tracking a stable single-note pitch.' };
+    }
+
+    function estimatePitchWithYin(buffer, sampleRate, profile) {
+        const minLag = Math.floor(sampleRate / profile.maxFrequency);
+        const maxLag = Math.min(Math.floor(sampleRate / profile.minFrequency), Math.floor(buffer.length / 2));
+        const difference = new Float32Array(maxLag + 1);
+
+        for (let lag = 1; lag <= maxLag; lag++) {
+            let sum = 0;
+            for (let i = 0; i < buffer.length - lag; i++) {
+                const delta = buffer[i] - buffer[i + lag];
+                sum += delta * delta;
+            }
+
+            difference[lag] = sum;
+        }
+
+        let runningSum = 0;
+        difference[0] = 1;
+        for (let lag = 1; lag <= maxLag; lag++) {
+            runningSum += difference[lag];
+            difference[lag] = runningSum === 0 ? 1 : difference[lag] * lag / runningSum;
+        }
+
+        let bestLag = -1;
+        for (let lag = minLag; lag <= maxLag; lag++) {
+            if (difference[lag] >= profile.yinThreshold) {
+                continue;
+            }
+
+            while (lag + 1 <= maxLag && difference[lag + 1] < difference[lag]) {
+                lag++;
+            }
+
+            bestLag = lag;
+            break;
+        }
+
+        if (bestLag < 0) {
             return null;
         }
 
-        const minLag = Math.floor(sampleRate / MAX_FREQUENCY);
-        const maxLag = Math.min(Math.floor(sampleRate / MIN_FREQUENCY), Math.floor(buffer.length / 2));
+        const frequency = sampleRate / refineLag(difference, bestLag, minLag, maxLag);
+        if (!Number.isFinite(frequency) || frequency < profile.minFrequency || frequency > profile.maxFrequency) {
+            return null;
+        }
+
+        return { frequency, confidence: 1 - difference[bestLag] };
+    }
+
+    function estimatePitchWithAutocorrelation(buffer, sampleRate, profile) {
+        const minLag = Math.floor(sampleRate / profile.maxFrequency);
+        const maxLag = Math.min(Math.floor(sampleRate / profile.minFrequency), Math.floor(buffer.length / 2));
         let bestLag = -1;
         let bestCorrelation = 0;
 
         for (let lag = minLag; lag <= maxLag; lag++) {
             let correlation = 0;
+            let currentEnergy = 0;
+            let delayedEnergy = 0;
+
             for (let i = 0; i < buffer.length - lag; i++) {
-                correlation += buffer[i] * buffer[i + lag];
+                const current = buffer[i];
+                const delayed = buffer[i + lag];
+                correlation += current * delayed;
+                currentEnergy += current * current;
+                delayedEnergy += delayed * delayed;
             }
 
-            correlation /= buffer.length - lag;
-            if (correlation > bestCorrelation) {
-                bestCorrelation = correlation;
+            const normalizedCorrelation = correlation / Math.sqrt(currentEnergy * delayedEnergy);
+            if (!Number.isFinite(normalizedCorrelation) || normalizedCorrelation < profile.autocorrelationThreshold) {
+                continue;
+            }
+
+            if (normalizedCorrelation > bestCorrelation) {
+                bestCorrelation = normalizedCorrelation;
                 bestLag = lag;
             }
         }
 
-        if (bestLag <= 0 || bestCorrelation < 0.0025) {
+        if (bestLag < 0) {
             return null;
         }
 
         const frequency = sampleRate / bestLag;
-        if (!Number.isFinite(frequency) || frequency < MIN_FREQUENCY || frequency > MAX_FREQUENCY) {
+        if (!Number.isFinite(frequency) || frequency < profile.minFrequency || frequency > profile.maxFrequency) {
             return null;
         }
 
-        return { frequency, rms };
+        return { frequency, confidence: Math.min(0.95, bestCorrelation) };
+    }
+
+    function refineLag(difference, lag, minLag, maxLag) {
+        if (lag <= minLag || lag >= maxLag) {
+            return lag;
+        }
+
+        const previousDifference = difference[lag - 1];
+        const currentDifference = difference[lag];
+        const nextDifference = difference[lag + 1];
+        const denominator = previousDifference - 2 * currentDifference + nextDifference;
+        if (Math.abs(denominator) < 1e-12) {
+            return lag;
+        }
+
+        return lag + 0.5 * (previousDifference - nextDifference) / denominator;
     }
 
     function sendNoteOn(midi) {
@@ -309,18 +533,22 @@ window.fretlessAudioInput = (() => {
         }
 
         _analyser.getFloatTimeDomainData(_buffer);
-        drawWaveform(_buffer);
-        const rms = calculateRms(_buffer);
+        const gainAnalysis = analyzeGain(_buffer);
+        sendGainStatus(gainAnalysis.status, gainAnalysis.detail);
+        const detectionBuffer = applyInputGain(_buffer, _inputGain);
+        const rms = calculateRms(detectionBuffer);
         if (_dotNetRef) {
             _dotNetRef.invokeMethodAsync('OnAudioInputLevelDetected', rms);
         }
 
-        const pitch = estimatePitch(_buffer, _ctx.sampleRate);
+        const pitch = estimatePitch(detectionBuffer, _ctx.sampleRate, gainAnalysis);
+        drawWaveform(detectionBuffer, pitch);
 
-        if (!pitch) {
+        if (!pitch.frequency) {
             _candidateMidi = null;
             _candidateFrames = 0;
             _quietFrames++;
+            sendPitchStatus(pitch.status, pitch.detail);
             if (_quietFrames >= NOTE_OFF_QUIET_FRAMES) {
                 sendNoteOff();
             }
@@ -330,10 +558,12 @@ window.fretlessAudioInput = (() => {
         }
 
         _quietFrames = 0;
+        sendGainStatus(gainAnalysis.status, gainAnalysis.detail);
         const midi = Math.min(127, Math.max(0, frequencyToMidi(pitch.frequency)));
         if (_dotNetRef) {
             _dotNetRef.invokeMethodAsync('OnAudioInputPitchDetected', midi, pitch.frequency, pitch.rms);
         }
+        sendPitchStatus(pitch.status, `${pitch.detail} Confidence ${(pitch.confidence * 100).toFixed(0)}%.`);
 
         if (_candidateMidi === midi) {
             _candidateFrames++;
@@ -361,6 +591,9 @@ window.fretlessAudioInput = (() => {
         _candidateMidi = null;
         _candidateFrames = 0;
         _quietFrames = 0;
+        _lastPitchStatus = '';
+        _lastGainStatus = '';
+        _inputGain = 1;
 
         if (_source) {
             _source.disconnect();
@@ -410,8 +643,9 @@ window.fretlessAudioInput = (() => {
     }
 
     return {
-        async start(dotNetRef, recordingMethod = 'Microphone') {
+        async start(dotNetRef, recordingMethod = 'Microphone', instrument = '') {
             _dotNetRef = dotNetRef;
+            _profile = getProfile(instrument);
             if (!navigator.mediaDevices?.getUserMedia) {
                 console.warn('Audio input is not supported in this browser.');
                 return false;
@@ -441,7 +675,7 @@ window.fretlessAudioInput = (() => {
                 _ctx = new (window.AudioContext || window.webkitAudioContext)();
                 _source = _ctx.createMediaStreamSource(_stream);
                 _analyser = _ctx.createAnalyser();
-                _analyser.fftSize = 4096;
+                _analyser.fftSize = _profile.fftSize;
                 _buffer = new Float32Array(_analyser.fftSize);
                 _source.connect(_analyser);
                 _rafId = requestAnimationFrame(processFrame);
