@@ -101,6 +101,13 @@ public static class LibraryRegistry
             DemoType: typeof(NoteCircleViewDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Primitives/NoteCircleView.razor"),
         new(
+            Slug: "spiral-view",
+            Title: "SpiralView",
+            Description: "Stateless renderer for SpiralWheel's main spiral SVG; takes precomputed segments/slices/labels + predicate Funcs and exposes SvgRef for the parent's JS zoom/pan interop.",
+            Group: LibraryGroup.Primitives,
+            DemoType: typeof(SpiralViewDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Primitives/SpiralView.razor"),
+        new(
             Slug: "stability-cluster",
             Title: "StabilityCluster",
             Description: "Stateless SVG bubble cluster encoding per-note consonance + pairwise relationships.",

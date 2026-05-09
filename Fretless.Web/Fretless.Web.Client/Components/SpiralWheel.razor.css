@@ -733,23 +733,6 @@
     text-transform: uppercase;
 }
 
-.spiral-svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-    touch-action: none;
-    user-select: none;
-    object-fit: contain;
-}
-
-.spiral-segment path {
-    transition: opacity 0.16s, stroke-width 0.16s;
-}
-
-.spiral-note {
-    transition: filter 0.12s;
-}
-
 .spiral-instrument-overlay-panel {
     position: static;
     width: 100%;
@@ -886,9 +869,6 @@
     gap: 0.55rem;
 }
 
-.spiral-note:hover {
-    filter: brightness(1.25);
-}
 
 .spiral-note--selected {
     filter: brightness(1.15) drop-shadow(0 0 6px rgba(255, 215, 0, 0.7));

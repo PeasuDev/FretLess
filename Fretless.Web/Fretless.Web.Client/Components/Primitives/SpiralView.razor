@@ -1,0 +1,235 @@
+@namespace Fretless.Web.Client.Components.Primitives
+@using Fretless.Web.Client.Components
+
+<svg @ref="SvgRef"
+     viewBox="@ViewBox"
+     xmlns="http://www.w3.org/2000/svg"
+     class="spiral-view"
+     preserveAspectRatio="xMidYMid meet"
+     role="img"
+     aria-label="Subdivision-aware zooming spiral">
+
+    <defs>
+        <radialGradient id="spiralBg" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#111111" stop-opacity="1" />
+            <stop offset="100%" stop-color="#000000" stop-opacity="1" />
+        </radialGradient>
+        <filter id="keyShadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#000000" flood-opacity="1" />
+        </filter>
+        <filter id="centerHubShadow" x="-40%" y="-40%" width="180%" height="180%">
+            <feDropShadow dx="0" dy="5" stdDeviation="10" flood-color="#000000" flood-opacity="1" />
+        </filter>
+    </defs>
+
+    <rect x="-500" y="-500" width="1000" height="1000" fill="url(#spiralBg)" />
+
+    @{
+        var surfacePointerEvents = SurfaceSliceOpacity <= 0.001 ? "none" : "auto";
+        var segmentPointerEvents = SegmentOpacity <= 0.001 ? "none" : "auto";
+    }
+
+    <g class="spiral-rotation-layer" transform="rotate(@Rotation.I())">
+
+        @* Surface slices *@
+        <g style="pointer-events:@surfacePointerEvents" opacity="@SurfaceSliceOpacity.I()">
+            @foreach (var slice in SurfaceSlices)
+            {
+                var sliceSelected = IsSubdivisionSelected?.Invoke(slice.SubdivisionIndex) ?? false;
+                var isKeySlice = slice.SubdivisionIndex == KeySubdivisionIndex;
+                var isNotInScale = IsNoteOutsideSelectedScale?.Invoke(slice.SubdivisionIndex) ?? false;
+                var isPlaying = IsSemitonePlaying is not null
+                    && ToChromaticSemitone is not null
+                    && IsSemitonePlaying(ToChromaticSemitone(slice.SubdivisionIndex));
+                var sliceIsBlocked = isNotInScale && !sliceSelected;
+                var sliceOpacity = isPlaying ? 1.0 : sliceSelected ? 1.0 : (isNotInScale ? 0.3 : NonSelectedSliceOpacity);
+                var sliceFill = isPlaying ? (PlayingFillFor is not null && ToChromaticSemitone is not null
+                                              ? PlayingFillFor(ToChromaticSemitone(slice.SubdivisionIndex))
+                                              : "#00e5ff")
+                    : isKeySlice || (ShowSelectedNotesAsWhite && sliceSelected) ? "#ffffff"
+                    : slice.Color;
+                var subIdx = slice.SubdivisionIndex;
+                <g class="spiral-segment spiral-note @(sliceSelected ? "spiral-note--selected" : null) @(isPlaying ? "spiral-note--playing" : null)"
+                   @onclick="() => OnNoteClicked.InvokeAsync((subIdx, (int?)null))"
+                   style="cursor:@(sliceIsBlocked ? "not-allowed" : "pointer")">
+                    <path d="@slice.Path"
+                          fill="@sliceFill"
+                          stroke="@(isPlaying ? "#ffffff" : "none")"
+                          stroke-width="@(isPlaying ? (3.0 / Zoom).I() : "0")"
+                          opacity="@sliceOpacity.I()"
+                          filter="@(isKeySlice ? "url(#keyShadow)" : null)" />
+                </g>
+            }
+        </g>
+
+        @* Segments *@
+        <g opacity="@SegmentOpacity.I()" style="pointer-events:@segmentPointerEvents">
+            @foreach (var segment in Segments)
+            {
+                var segSelected = IsSegmentSelected?.Invoke(segment.SubdivisionIndex, segment.Cycle) ?? false;
+                var isKeySegment = segment.SubdivisionIndex == KeySubdivisionIndex;
+                var isNotInScale = IsNoteOutsideSelectedScale?.Invoke(segment.SubdivisionIndex) ?? false;
+                var isPlaying = IsSemitonePlaying is not null
+                    && ToChromaticSemitone is not null
+                    && IsSemitonePlaying(ToChromaticSemitone(segment.SubdivisionIndex));
+                var segmentIsBlocked = isNotInScale && !segSelected;
+                var segmentNodeOpacity = isPlaying ? 1.0 : segSelected ? 1.0 : (isNotInScale ? 0.3 : NonSelectedSliceOpacity);
+                var segmentFill = isPlaying ? "#00e5ff"
+                    : isKeySegment || (ShowSelectedNotesAsWhite && segSelected) ? "#ffffff"
+                    : segment.Color;
+                var subIdx = segment.SubdivisionIndex;
+                var cycle = segment.Cycle;
+                <g class="spiral-segment spiral-note @(segSelected ? "spiral-note--selected" : null) @(isPlaying ? "spiral-note--playing" : null)"
+                   @onclick="() => OnNoteClicked.InvokeAsync((subIdx, (int?)cycle))"
+                   style="cursor:@(segmentIsBlocked ? "not-allowed" : "pointer")">
+                    <path d="@segment.MorphPath"
+                          fill="@segmentFill"
+                          stroke="@(isPlaying ? "#ffffff" : "none")"
+                          stroke-width="@(isPlaying ? (3.0 / Zoom).I() : "0")"
+                          opacity="@segmentNodeOpacity.I()"
+                          filter="@(isKeySegment ? "url(#keyShadow)" : null)" />
+                </g>
+            }
+        </g>
+
+        @* Selection overlays — gold ring (or white) drawn on top of the selected slice/segment *@
+        <g style="pointer-events:none">
+            @if (SurfaceSliceOpacity > 0.001)
+            {
+                @foreach (var slice in SurfaceSlices)
+                {
+                    if (IsSubdivisionSelected?.Invoke(slice.SubdivisionIndex) != true) continue;
+                    var fill = ShowSelectedNotesAsWhite ? "#ffffff" : "rgba(255,215,0,0.18)";
+                    var stroke = ShowSelectedNotesAsWhite ? "#ffffff" : "#FFD700";
+                    var opacity = ShowSelectedNotesAsWhite ? "1" : SurfaceSliceOpacity.I();
+                    <path d="@slice.Path" fill="@fill" stroke="@stroke" stroke-width="@((2.5 / Zoom).I())" stroke-linejoin="round" opacity="@opacity" />
+                }
+            }
+
+            @if (SegmentOpacity > 0.001)
+            {
+                @foreach (var segment in Segments)
+                {
+                    if (IsSegmentSelected?.Invoke(segment.SubdivisionIndex, segment.Cycle) != true) continue;
+                    var fill = ShowSelectedNotesAsWhite ? "#ffffff" : "rgba(255,215,0,0.18)";
+                    var stroke = ShowSelectedNotesAsWhite ? "#ffffff" : "#FFD700";
+                    var opacity = ShowSelectedNotesAsWhite ? "1" : SegmentOpacity.I();
+                    <path d="@segment.MorphPath" fill="@fill" stroke="@stroke" stroke-width="@((2.5 / Zoom).I())" stroke-linejoin="round" opacity="@opacity" />
+                }
+            }
+        </g>
+
+        @* Center hub circle *@
+        <circle cx="0" cy="0" r="@CenterHubRadius.I()" fill="@(KeySubdivisionIndex >= 0 ? "#ffffff" : "#000000")" filter="@(KeySubdivisionIndex >= 0 ? "url(#centerHubShadow)" : null)" />
+
+        @* MIDI active highlights — rotated with the wheel *@
+        @if (MidiActiveSemitones is { Count: > 0 } && SemitoneToSubdivisionIndex is not null)
+        {
+            <g style="pointer-events:none">
+                @foreach (var semitone in MidiActiveSemitones)
+                {
+                    var subIdx = SemitoneToSubdivisionIndex(semitone);
+                    @foreach (var slice in SurfaceSlices)
+                    {
+                        if (slice.SubdivisionIndex != subIdx) continue;
+                        <path d="@slice.Path" fill="rgba(0,229,255,0.35)" stroke="#00e5ff" stroke-width="@((3.0 / Zoom).I())" stroke-linejoin="round" />
+                    }
+                    @foreach (var seg in Segments)
+                    {
+                        if (seg.SubdivisionIndex != subIdx) continue;
+                        <path d="@seg.MorphPath" fill="rgba(0,229,255,0.35)" stroke="#00e5ff" stroke-width="@((3.0 / Zoom).I())" stroke-linejoin="round" />
+                    }
+                }
+            </g>
+        }
+
+        @* Scale-degree labels (counter-rotated to stay upright) *@
+        @if (ScaleDegreeLabels is { Count: > 0 })
+        {
+            @foreach (var degree in ScaleDegreeLabels)
+            {
+                @SvgTextUpright(degree.X, degree.Y, DegreeLabelSize,
+                    "fill:#f5f5f5;font-family:'Helvetica Neue',sans-serif;font-weight:800;letter-spacing:0.03em;pointer-events:none;opacity:0.92",
+                    degree.Text, -Rotation)
+            }
+        }
+
+        @* Surface labels (counter-rotated) *@
+        @if (SurfaceLabelOpacity > 0.001 && SurfaceLabels is { Count: > 0 })
+        {
+            @foreach (var label in SurfaceLabels)
+            {
+                var isSelected = IsSubdivisionSelected?.Invoke(label.SubdivisionIndex) ?? false;
+                var labelSize = isSelected ? SurfaceLabelSize * 1.22 : SurfaceLabelSize;
+                @SvgTextUpright(label.X, label.Y, labelSize,
+                    $"fill:#111111;font-family:'Helvetica Neue',sans-serif;font-weight:800;letter-spacing:0.01em;pointer-events:none;opacity:{SurfaceLabelOpacity.I()}",
+                    label.Text, -Rotation)
+            }
+        }
+
+        @* Overtone labels (counter-rotated) *@
+        @if (OvertoneLabelOpacity > 0.001)
+        {
+            @foreach (var segment in Segments)
+            {
+                var isSelected = IsSegmentSelected?.Invoke(segment.SubdivisionIndex, segment.Cycle) ?? false;
+                var labelSize = isSelected ? OvertoneLabelBaseSize * 1.22 : OvertoneLabelBaseSize;
+                @SvgTextUpright(segment.MidX, segment.MidY, labelSize,
+                    $"fill:#111111;font-family:'Helvetica Neue',sans-serif;font-weight:700;pointer-events:none;opacity:{OvertoneLabelOpacity.I()}",
+                    segment.Label, -Rotation)
+            }
+        }
+    </g>
+
+    @* Center hub key label — fixed at origin, always upright *@
+    @if (KeySubdivisionIndex >= 0 && !string.IsNullOrEmpty(CenterHubKeyLabel))
+    {
+        @SvgText(0, 0, CenterLabelSize,
+            "fill:#111111;font-family:'Helvetica Neue',sans-serif;font-weight:900;letter-spacing:0.02em;pointer-events:none",
+            CenterHubKeyLabel)
+    }
+</svg>
+
+@code {
+    /// <summary>SVG element reference, for parent-side JS interop (zoom/pan handlers).</summary>
+    public ElementReference SvgRef { get; private set; }
+
+    [Parameter, EditorRequired] public IReadOnlyList<SpiralWheel.SpiralSegment> Segments { get; set; } = [];
+    [Parameter, EditorRequired] public IReadOnlyList<SpiralWheel.SolidSurfaceSlice> SurfaceSlices { get; set; } = [];
+    [Parameter] public IReadOnlyList<SpiralWheel.ScaleDegreeLabel>? ScaleDegreeLabels { get; set; }
+    [Parameter] public IReadOnlyList<SpiralWheel.SurfaceLabel>? SurfaceLabels { get; set; }
+
+    [Parameter, EditorRequired] public string ViewBox { get; set; } = "0 0 100 100";
+    [Parameter] public int KeySubdivisionIndex { get; set; } = -1;
+    [Parameter] public double Rotation { get; set; }
+    [Parameter] public double Zoom { get; set; } = 1.0;
+    [Parameter] public double SurfaceSliceOpacity { get; set; }
+    [Parameter] public double SegmentOpacity { get; set; }
+    [Parameter] public double SurfaceLabelOpacity { get; set; }
+    [Parameter] public double OvertoneLabelOpacity { get; set; }
+    [Parameter] public double NonSelectedSliceOpacity { get; set; } = 1.0;
+    [Parameter] public bool ShowSelectedNotesAsWhite { get; set; }
+    [Parameter] public IReadOnlyCollection<int>? MidiActiveSemitones { get; set; }
+    [Parameter] public string? CenterHubKeyLabel { get; set; }
+    [Parameter] public double CenterLabelSize { get; set; }
+    [Parameter] public double DegreeLabelSize { get; set; }
+    [Parameter] public double SurfaceLabelSize { get; set; }
+    [Parameter] public double OvertoneLabelBaseSize { get; set; }
+    [Parameter] public double CenterHubRadius { get; set; } = 0.13;
+
+    [Parameter] public Func<int, bool>? IsSubdivisionSelected { get; set; }
+    [Parameter] public Func<int, int, bool>? IsSegmentSelected { get; set; }
+    [Parameter] public Func<int, bool>? IsSemitonePlaying { get; set; }
+    [Parameter] public Func<int, string>? PlayingFillFor { get; set; }
+    [Parameter] public Func<int, bool>? IsNoteOutsideSelectedScale { get; set; }
+    [Parameter] public Func<int, int>? ToChromaticSemitone { get; set; }
+    [Parameter] public Func<int, int>? SemitoneToSubdivisionIndex { get; set; }
+
+    [Parameter] public EventCallback<(int SubdivisionIndex, int? Cycle)> OnNoteClicked { get; set; }
+
+    private static MarkupString SvgText(double x, double y, double fontSize, string style, string? content) =>
+        new($"<text x=\"{x.I()}\" y=\"{y.I()}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"{fontSize.I()}\" style=\"{style}\">{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(content ?? string.Empty)}</text>");
+
+    private static MarkupString SvgTextUpright(double x, double y, double fontSize, string style, string? content, double counterRotationDegrees) =>
+        new($"<text x=\"{x.I()}\" y=\"{y.I()}\" text-anchor=\"middle\" dominant-baseline=\"middle\" font-size=\"{fontSize.I()}\" style=\"{style}\" transform=\"rotate({counterRotationDegrees.I()},{x.I()},{y.I()})\">{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(content ?? string.Empty)}</text>");
+}

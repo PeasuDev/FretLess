@@ -1,0 +1,94 @@
+@namespace Fretless.Web.Client.Library.Demos.Primitives
+@using Fretless.Web.Client.Components
+
+<LibraryFrame Title="SpiralView"
+              Description="Stateless renderer for SpiralWheel's main spiral SVG. Inputs are entirely parent-precomputed: lists of segments / surface slices / labels, plus opacity / blend / zoom / rotation scalars and predicate Funcs (IsSubdivisionSelected, IsSegmentSelected, IsSemitonePlaying, IsNoteOutsideSelectedScale, ToChromaticSemitone, SemitoneToSubdivisionIndex). Output is OnNoteClicked((subIdx, cycle?)). Exposes SvgRef as a public property so the parent can attach JS interop (zoom/pan handlers) after first render. Pure renderer — no service injection, no localStorage."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Primitives/SpiralView.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Empty — no segments / slices</h3>
+            <div class="variant-card__render">
+                <div style="width:240px;height:240px;background:#000;">
+                    <SpiralView Segments="@EmptySegments"
+                                SurfaceSlices="@EmptySlices"
+                                ViewBox="0 0 100 100"
+                                CenterHubRadius="6"
+                                CenterLabelSize="10" />
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>&lt;SpiralView Segments="[]" SurfaceSlices="[]" ViewBox="0 0 100 100" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Single placeholder slice + segment</h3>
+            <div class="variant-card__render">
+                <div style="width:240px;height:240px;background:#000;">
+                    <SpiralView Segments="@DemoSegments"
+                                SurfaceSlices="@DemoSlices"
+                                ViewBox="0 0 100 100"
+                                Rotation="0"
+                                Zoom="1"
+                                SurfaceSliceOpacity="1"
+                                SegmentOpacity="1"
+                                SurfaceLabelOpacity="0.95"
+                                OvertoneLabelOpacity="0"
+                                NonSelectedSliceOpacity="0.82"
+                                CenterHubRadius="6"
+                                CenterLabelSize="10"
+                                SurfaceLabelSize="6"
+                                OvertoneLabelBaseSize="4" />
+                </div>
+            </div>
+            <pre class="variant-card__code"><code>&lt;SpiralView Segments="…" SurfaceSlices="…" ViewBox="0 0 100 100" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <span>Last clicked: <strong>@(_lastClicked.HasValue ? $"sub {_lastClicked.Value.Sub}, cycle {_lastClicked.Value.Cycle?.ToString() ?? "—"}" : "(none)")</strong></span>
+            <button type="button" @onclick="() => _lastClicked = null">Reset</button>
+            <span style="color:#888">The full live SpiralView is on /, served by SpiralWheel itself; this demo just exercises the contract.</span>
+        </div>
+        <div class="playground__render">
+            <div style="width:240px;height:240px;background:#000;">
+                <SpiralView Segments="@DemoSegments"
+                            SurfaceSlices="@DemoSlices"
+                            ViewBox="0 0 100 100"
+                            CenterHubRadius="6"
+                            CenterLabelSize="10"
+                            SurfaceSliceOpacity="1"
+                            SurfaceLabelOpacity="0.95"
+                            SurfaceLabelSize="6"
+                            OvertoneLabelBaseSize="4"
+                            OnNoteClicked="OnPlaygroundClicked" />
+            </div>
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly IReadOnlyList<SpiralWheel.SpiralSegment> EmptySegments = [];
+    private static readonly IReadOnlyList<SpiralWheel.SolidSurfaceSlice> EmptySlices = [];
+
+    // Two slices ringing the centre and one segment on top — pure shape only, not
+    // a faithful spiral; the demo is about exercising the contract.
+    private static readonly IReadOnlyList<SpiralWheel.SolidSurfaceSlice> DemoSlices =
+    [
+        new(0, "#5e3aa8", "M 50 50 L 80 50 A 30 30 0 0 1 65 75.98 Z"),
+        new(1, "#a84a3a", "M 50 50 L 65 75.98 A 30 30 0 0 1 35 75.98 Z"),
+        new(2, "#3a7da8", "M 50 50 L 35 75.98 A 30 30 0 0 1 20 50 Z"),
+    ];
+
+    private static readonly IReadOnlyList<SpiralWheel.SpiralSegment> DemoSegments =
+    [
+        new(0, 0, 0, "C", "#5e3aa8", "", "M 50 50 L 80 50 A 30 30 0 0 1 65 75.98 Z", 70, 60),
+    ];
+
+    private (int Sub, int? Cycle)? _lastClicked;
+
+    private void OnPlaygroundClicked((int SubdivisionIndex, int? Cycle) e)
+    {
+        _lastClicked = (e.SubdivisionIndex, e.Cycle);
+    }
+}

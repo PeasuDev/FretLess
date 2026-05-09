@@ -10,6 +10,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Fretless.Web.Client.Components.Primitives;
 using Fretless.Web.Client.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -417,7 +418,8 @@ public partial class SpiralWheel
         return true;
     }
 
-    private ElementReference _svgRef;
+    private SpiralView? _spiralView;
+    private ElementReference SvgRef => _spiralView?.SvgRef ?? default;
     private DotNetObjectReference<SpiralWheel>? _dotNetRef;
     private readonly HashSet<int> _midiActiveSemitones = [];
     private readonly HashSet<int> _activeInputMidiNotes = [];
@@ -533,7 +535,7 @@ public partial class SpiralWheel
             _dotNetRef = DotNetObjectReference.Create(this);
             await RestoreSettingsAsync();
             await JS.InvokeVoidAsync("fretlessSpiralZoom.init",
-                _svgRef, _dotNetRef, _zoom, _panX, _panY);
+                SvgRef, _dotNetRef, _zoom, _panX, _panY);
             _jsZoomInitialized = true;
             // Freeze the viewBox binding so subsequent Blazor re-renders never overwrite
             // the attribute that fretlessSpiralZoom animates directly via requestAnimationFrame.
@@ -798,6 +800,9 @@ public partial class SpiralWheel
     private Task OnGuitarSemitoneClicked(int semitone) =>
         HandleNoteClickAsync(SemitoneToSubdivisionIndex(semitone), null);
 
+    private Task OnSpiralNoteClicked((int SubdivisionIndex, int? Cycle) e) =>
+        HandleNoteClickAsync(e.SubdivisionIndex, e.Cycle);
+
     private void OnMidiNoteOff(int midi)
     {
         _activeInputMidiNotes.Remove(midi);
@@ -1053,7 +1058,7 @@ public partial class SpiralWheel
         _panY = 0;
         if (_jsZoomInitialized)
         {
-            await JS.InvokeVoidAsync("fretlessSpiralZoom.init", _svgRef, _dotNetRef, from, 0.0, 0.0);
+            await JS.InvokeVoidAsync("fretlessSpiralZoom.init", SvgRef, _dotNetRef, from, 0.0, 0.0);
             await JS.InvokeVoidAsync("fretlessSpiralZoom.setTarget", to, 0.0, 0.0);
         }
         // Allow the rAF animation time to run (smoothing 0.30 converges in ~durationMs)
@@ -2720,7 +2725,7 @@ public partial class SpiralWheel
     private double ReadableWheelLabelSize(double baseSize, double minimumSize) =>
         Math.Max(baseSize / _zoom, minimumSize);
 
-    private sealed record SpiralSegment(
+    public sealed record SpiralSegment(
         int SubdivisionIndex,
         int Cycle,
         int SegmentIndex,
@@ -2731,11 +2736,11 @@ public partial class SpiralWheel
         double MidX,
         double MidY);
 
-    private sealed record SolidSurfaceSlice(int SubdivisionIndex, string Color, string Path);
+    public sealed record SolidSurfaceSlice(int SubdivisionIndex, string Color, string Path);
 
-    private sealed record SurfaceLabel(int SubdivisionIndex, double X, double Y, string Text);
+    public sealed record SurfaceLabel(int SubdivisionIndex, double X, double Y, string Text);
 
-    private sealed record ScaleDegreeLabel(double X, double Y, string Text);
+    public sealed record ScaleDegreeLabel(double X, double Y, string Text);
 
     private sealed record SelectedNote(int SubdivisionIndex, int? Cycle);
 
