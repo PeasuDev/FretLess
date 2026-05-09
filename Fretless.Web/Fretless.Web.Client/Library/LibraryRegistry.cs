@@ -8,7 +8,9 @@ namespace Fretless.Web.Client.Library;
 
 /// <summary>
 /// Central registry of every demo shown in the /components gallery.
-/// Populated incrementally as Phase 2 (component demos) and Phase 3 (atoms) ship.
+/// Entries are grouped by <see cref="LibraryGroup"/> and listed alphabetically
+/// by Slug within each group; sidebar order follows registration order, so
+/// keep this list sorted when adding new entries.
 /// </summary>
 public static class LibraryRegistry
 {
@@ -113,19 +115,12 @@ public static class LibraryRegistry
             DemoType: typeof(ChordPairingsDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ChordPairings.razor"),
         new(
-            Slug: "harmonic-stability-display",
-            Title: "HarmonicStabilityDisplay",
-            Description: "SVG bubble cluster encoding pairwise consonance of 3+ notes; renders nothing below the threshold.",
+            Slug: "chord-wheel",
+            Title: "ChordWheel",
+            Description: "Interactive circle-of-fifths wheel with diatonic chord drill-down; emits OnChordSelected when a chord card is tapped.",
             Group: LibraryGroup.Components,
-            DemoType: typeof(HarmonicStabilityDisplayDemo),
-            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/HarmonicStabilityDisplay.razor"),
-        new(
-            Slug: "mood-legend",
-            Title: "MoodLegend",
-            Description: "Row of mood filter chips driven by MusicTheoryService.MoodColors.",
-            Group: LibraryGroup.Components,
-            DemoType: typeof(MoodLegendDemo),
-            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/MoodLegend.razor"),
+            DemoType: typeof(ChordWheelDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ChordWheel.razor"),
         new(
             Slug: "connected-instrument-signal",
             Title: "ConnectedInstrumentSignal",
@@ -134,19 +129,19 @@ public static class LibraryRegistry
             DemoType: typeof(ConnectedInstrumentSignalDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ConnectedInstrumentSignal.razor"),
         new(
-            Slug: "instrument-visual-aid-slot",
-            Title: "InstrumentVisualAidSlot",
-            Description: "Empty visual-aid card that offers guitar fretboard and piano keyboard add actions for SpiralWheel.",
+            Slug: "fretboard",
+            Title: "Fretboard",
+            Description: "12-fret SVG with audio, MIDI input, scale overlay, position selector, manual dots, and tuning controls.",
             Group: LibraryGroup.Components,
-            DemoType: typeof(InstrumentVisualAidSlotDemo),
-            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/InstrumentVisualAidSlot.razor"),
+            DemoType: typeof(FretboardDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Fretboard.razor"),
         new(
-            Slug: "instrument-overlay-card",
-            Title: "InstrumentOverlayCard",
-            Description: "Reusable shell and header composition for SpiralWheel instrument overlay cards.",
+            Slug: "harmonic-stability-display",
+            Title: "HarmonicStabilityDisplay",
+            Description: "SVG bubble cluster encoding pairwise consonance of 3+ notes; renders nothing below the threshold.",
             Group: LibraryGroup.Components,
-            DemoType: typeof(InstrumentOverlayCardDemo),
-            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/InstrumentOverlayCard.razor"),
+            DemoType: typeof(HarmonicStabilityDisplayDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/HarmonicStabilityDisplay.razor"),
         new(
             Slug: "instrument-display-settings-panel",
             Title: "InstrumentDisplaySettingsPanel",
@@ -155,12 +150,26 @@ public static class LibraryRegistry
             DemoType: typeof(InstrumentDisplaySettingsPanelDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/InstrumentDisplaySettingsPanel.razor"),
         new(
-            Slug: "tuning-selector",
-            Title: "TuningSelector",
-            Description: "Preset dropdown + collapsible per-string MIDI-note editor; Inline mode forces expanded with a Done button.",
+            Slug: "instrument-overlay-card",
+            Title: "InstrumentOverlayCard",
+            Description: "Reusable shell and header composition for SpiralWheel instrument overlay cards.",
             Group: LibraryGroup.Components,
-            DemoType: typeof(TuningSelectorDemo),
-            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/TuningSelector.razor"),
+            DemoType: typeof(InstrumentOverlayCardDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/InstrumentOverlayCard.razor"),
+        new(
+            Slug: "instrument-visual-aid-slot",
+            Title: "InstrumentVisualAidSlot",
+            Description: "Empty visual-aid card that offers guitar fretboard and piano keyboard add actions for SpiralWheel.",
+            Group: LibraryGroup.Components,
+            DemoType: typeof(InstrumentVisualAidSlotDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/InstrumentVisualAidSlot.razor"),
+        new(
+            Slug: "mood-legend",
+            Title: "MoodLegend",
+            Description: "Row of mood filter chips driven by MusicTheoryService.MoodColors.",
+            Group: LibraryGroup.Components,
+            DemoType: typeof(MoodLegendDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/MoodLegend.razor"),
         new(
             Slug: "scale-selector",
             Title: "ScaleSelector",
@@ -169,26 +178,19 @@ public static class LibraryRegistry
             DemoType: typeof(ScaleSelectorDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ScaleSelector.razor"),
         new(
-            Slug: "chord-wheel",
-            Title: "ChordWheel",
-            Description: "Interactive circle-of-fifths wheel with diatonic chord drill-down; emits OnChordSelected when a chord card is tapped.",
-            Group: LibraryGroup.Components,
-            DemoType: typeof(ChordWheelDemo),
-            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/ChordWheel.razor"),
-        new(
-            Slug: "fretboard",
-            Title: "Fretboard",
-            Description: "12-fret SVG with audio, MIDI input, scale overlay, position selector, manual dots, and tuning controls.",
-            Group: LibraryGroup.Components,
-            DemoType: typeof(FretboardDemo),
-            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Fretboard.razor"),
-        new(
             Slug: "spiral-wheel",
             Title: "SpiralWheel",
             Description: "Self-contained spiral chart with key/scale, instrument overlays, ratios, and zoom; state persisted in localStorage and shared with the home page.",
             Group: LibraryGroup.Components,
             DemoType: typeof(SpiralWheelDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/SpiralWheel.razor"),
+        new(
+            Slug: "tuning-selector",
+            Title: "TuningSelector",
+            Description: "Preset dropdown + collapsible per-string MIDI-note editor; Inline mode forces expanded with a Done button.",
+            Group: LibraryGroup.Components,
+            DemoType: typeof(TuningSelectorDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/TuningSelector.razor"),
         new(
             Slug: "design-tokens",
             Title: "Design Tokens",
