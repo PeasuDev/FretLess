@@ -13,9 +13,8 @@
 
 .spiral-connected-note {
     display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: baseline;
-    gap: 0.15rem 0.55rem;
+    justify-items: start;
+    gap: 0.12rem;
 }
 
 .spiral-connected-note-label {
@@ -32,36 +31,13 @@
     font-weight: 900;
     line-height: 1;
     letter-spacing: 0.04em;
-    text-align: right;
 }
 
 .spiral-connected-note-detail {
-    grid-column: 1 / -1;
     color: rgba(255,255,255,0.72);
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.03em;
-}
-
-.spiral-connected-device {
-    display: grid;
-    gap: 0.12rem;
-    color: rgba(255,255,255,0.72);
-}
-
-.spiral-connected-device-label {
-    font-size: 0.6rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.spiral-connected-device-name {
-    color: rgba(255,255,255,0.9);
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    overflow-wrap: anywhere;
 }
 
 .spiral-signal-waveform {
@@ -110,26 +86,3 @@
     text-transform: uppercase;
 }
 
-.spiral-pitch-guidance {
-    display: grid;
-    gap: 0.16rem;
-    padding: 0.45rem 0.5rem;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px;
-    background: rgba(0,0,0,0.18);
-}
-
-.spiral-pitch-guidance-status {
-    color: #ffd43b;
-    font-size: 0.66rem;
-    font-weight: 900;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-}
-
-.spiral-pitch-guidance-detail {
-    color: rgba(255,255,255,0.74);
-    font-size: 0.68rem;
-    font-weight: 700;
-    line-height: 1.25;
-}

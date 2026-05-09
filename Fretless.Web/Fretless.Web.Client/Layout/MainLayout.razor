@@ -80,7 +80,7 @@
 </div>
 
 @code {
-    private static readonly string[] InstrumentKinds = ["Voice", "Guitar", "Piano"];
+    private static readonly string[] InstrumentKinds = ["Voice", "Electric Guitar", "Piano"];
     private static readonly string[] RecordingMethods = ["Microphone", "Audio Interface"];
 
     private bool _isAudioMuted;
@@ -117,6 +117,7 @@
 
     private static string ConnectedInstrumentDisplayName(string instrumentKind) => instrumentKind switch
     {
+        "Electric Guitar" => "Electric Guitar",
         "Guitar" => "Electric Guitar",
         _ => instrumentKind
     };

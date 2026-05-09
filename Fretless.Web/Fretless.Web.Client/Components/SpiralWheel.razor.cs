@@ -162,7 +162,7 @@ public partial class SpiralWheel
     private double? _currentInputFrequency;
     private double? _currentInputLevel;
     private string? _connectedInstrumentName;
-    private string _connectedInputDeviceName = "Detecting input device";
+    private string _connectedInputDeviceName = "Default audio input";
     private string _pitchDetectionStatus = "Waiting for pitch";
     private string _pitchDetectionDetail = "Use a clean single-note signal for best results.";
     private string _gainStatus = "none";
@@ -175,7 +175,7 @@ public partial class SpiralWheel
         : "Listening";
 
     private string CurrentInputDetail => _currentInputFrequency is double frequency
-        ? $"{frequency:0.0} Hz"
+        ? $"{frequency:0} Hz"
         : "Connect and play a single clear note.";
 
     private string CurrentSignalStatus => _currentInputLevel.GetValueOrDefault() > 0.006
@@ -876,6 +876,8 @@ public partial class SpiralWheel
 
         var requestedInstrument = string.Equals(connected.Instrument, "Voice", StringComparison.OrdinalIgnoreCase)
             ? InstrumentType.Guitar
+            : string.Equals(connected.Instrument, "Electric Guitar", StringComparison.OrdinalIgnoreCase)
+                ? InstrumentType.Guitar
             : Enum.TryParse<InstrumentType>(connected.Instrument, out var parsedInstrument)
                 ? parsedInstrument
                 : InstrumentType.None;
@@ -890,12 +892,14 @@ public partial class SpiralWheel
 
     private static string ConnectedInstrumentDisplayName(string instrument) => instrument switch
     {
+        "Electric Guitar" => "Electric Guitar",
         "Guitar" => "Electric Guitar",
         _ => instrument
     };
 
     private static string PitchDetectionTips(string instrument) => instrument switch
     {
+        "Electric Guitar" => "Use a clean tone, mute unused strings, and play one note at a time.",
         "Guitar" => "Use a clean tone, mute unused strings, and play one note at a time.",
         "Piano" => "Play one sustained note at a time; chords and sharp attacks can confuse pitch detection.",
         "Voice" => "Sing or hum a steady single pitch close to the microphone.",
@@ -1311,10 +1315,19 @@ public partial class SpiralWheel
 
         notes = scale.Intervals
             .OrderBy(i => i)
-            .Select(interval => $"{ChromaticSemitoneLabel((keySemitone + interval) % 12)}4")
-            .Append($"{ChromaticSemitoneLabel(keySemitone)}5")
+            .Select(interval => BuildScaleAudioNoteName(keySemitone, interval))
+            .Append(BuildScaleAudioNoteName(keySemitone, 12))
             .ToList();
         return true;
+    }
+
+    private static string BuildScaleAudioNoteName(int keySemitone, int interval)
+    {
+        const int baseOctave = 4;
+        var midi = (baseOctave + 1) * 12 + keySemitone + interval;
+        var note = ChromaticSemitoneLabel(midi % 12);
+        var octave = midi / 12 - 1;
+        return $"{note}{octave}";
     }
 
     private bool TryGetSelectedScalePlaybackSemitones(out IReadOnlyList<int> semitones)

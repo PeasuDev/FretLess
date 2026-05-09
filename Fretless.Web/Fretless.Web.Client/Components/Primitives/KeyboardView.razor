@@ -19,7 +19,7 @@
             var fill = isPlaying ? (PlayingFillFor?.Invoke(semitone) ?? "#00e5ff") : isRoot ? "#ffd700" : isSelected ? "#ffffff" : "#2a2a2a";
             var stroke = isPlaying ? "#ffffff" : "none";
             var strokeWidth = isPlaying ? "2.2" : "0";
-            var labelFill = isSelected || isPlaying ? "#111111" : "#ffffff";
+            var labelFill = isSelected || isRoot || isPlaying || UseDarkLabelsForUnhighlightedKeys ? "#111111" : "#ffffff";
             var label = MusicTheoryService.NoteAtIndex(semitone);
             var s = semitone;
             <rect x="@((x + 0.65).I())" y="12" width="20.7" height="86"
@@ -44,10 +44,10 @@
             var isSelected = HighlightedSemitones?.Contains(s) ?? false;
             var isRoot = RootSemitone.HasValue && s == RootSemitone.Value;
             var isPlaying = PlayingSemitones?.Contains(s) ?? false;
-            var fill = isPlaying ? (PlayingFillFor?.Invoke(s) ?? "#00e5ff") : isRoot ? "#ffd700" : isSelected ? "#ffffff" : "#111111";
-            var labelFill = isSelected || isPlaying ? "#111111" : "#ffffff";
-            var stroke = isPlaying ? "#ffffff" : isSelected ? "#111111" : "none";
-            var strokeWidth = isPlaying ? "2" : isSelected ? "1.2" : "0";
+            var fill = isPlaying ? (PlayingFillFor?.Invoke(s) ?? "#00e5ff") : isRoot ? "#ffd700" : isSelected ? "#ffffff" : UseDarkLabelsForUnhighlightedKeys ? "#2a2a2a" : "#111111";
+            var labelFill = isSelected || isRoot || isPlaying || UseDarkLabelsForUnhighlightedKeys ? "#111111" : "#ffffff";
+            var stroke = isPlaying ? "#ffffff" : isSelected || UseDarkLabelsForUnhighlightedKeys ? "#111111" : "none";
+            var strokeWidth = isPlaying ? "2" : isSelected || UseDarkLabelsForUnhighlightedKeys ? "1.2" : "0";
             var label = MusicTheoryService.NoteAtIndex(s);
             var x = relX + octOffset;
             <rect x="@((x + 0.75).I())" y="12" width="12.5" height="54"
@@ -68,6 +68,7 @@
     [Parameter] public IReadOnlyCollection<int>? PlayingSemitones { get; set; }
     [Parameter] public Func<int, string>? PlayingFillFor { get; set; }
     [Parameter] public bool ShowLabels { get; set; }
+    [Parameter] public bool UseDarkLabelsForUnhighlightedKeys { get; set; }
     [Parameter] public int OctaveCount { get; set; } = 2;
     [Parameter] public EventCallback<int> OnKeyClicked { get; set; }
 

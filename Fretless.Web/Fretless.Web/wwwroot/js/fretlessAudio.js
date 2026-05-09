@@ -203,19 +203,28 @@ window.fretlessAudioInput = (() => {
         tips: 'Play one clean single note and let it ring.'
     };
 
+    const ELECTRIC_GUITAR_PROFILE = {
+        ...DEFAULT_PROFILE,
+        minFrequency: 45,
+        maxFrequency: 1400,
+        minRms: 0.008,
+        signalRms: 0.0035,
+        noteOffSignalRms: 0.0018,
+        yinThreshold: 0.22,
+        autocorrelationThreshold: 0.58,
+        targetRms: 0.032,
+        maxInputGain: 14,
+        fftSize: 2048,
+        fastFftSize: 1024,
+        fastMinFrequency: 86,
+        noteChangeStableFrames: 1,
+        noteOffQuietFrames: 8,
+        tips: 'Use a clean tone, mute unused strings, and avoid chords or heavy effects.'
+    };
+
     const INSTRUMENT_PROFILES = {
-        guitar: {
-            ...DEFAULT_PROFILE,
-            minFrequency: 65,
-            maxFrequency: 1400,
-            minRms: 0.012,
-            yinThreshold: 0.24,
-            autocorrelationThreshold: 0.58,
-            targetRms: 0.028,
-            maxInputGain: 10,
-            fftSize: 1024,
-            tips: 'Use a clean tone, mute unused strings, and avoid chords or heavy effects.'
-        },
+        guitar: ELECTRIC_GUITAR_PROFILE,
+        'electric guitar': ELECTRIC_GUITAR_PROFILE,
         piano: {
             ...DEFAULT_PROFILE,
             minFrequency: 55,
@@ -238,6 +247,14 @@ window.fretlessAudioInput = (() => {
     const NOTE_ON_STABLE_FRAMES = 1;
     const NOTE_CHANGE_STABLE_FRAMES = 2;
     const NOTE_OFF_QUIET_FRAMES = 4;
+
+    function getTailBuffer(buffer, size) {
+        if (!Number.isFinite(size) || size >= buffer.length) {
+            return buffer;
+        }
+
+        return buffer.subarray(buffer.length - size);
+    }
 
     function calculateRms(buffer) {
         let rms = 0;
@@ -379,20 +396,31 @@ window.fretlessAudioInput = (() => {
         const rms = calculateRms(buffer);
         const profile = _profile ?? DEFAULT_PROFILE;
         const peak = calculatePeak(buffer);
+        const signalRms = _activeMidi === null
+            ? profile.signalRms
+            : (profile.noteOffSignalRms ?? profile.signalRms);
 
         if (gainAnalysis?.status === 'clipping' || peak >= profile.clippingPeak) {
             return { status: 'Input clipping', detail: 'Reduce interface or microphone gain for cleaner note detection.' };
         }
 
-        if (rms < profile.signalRms) {
+        if (rms < signalRms) {
             return { status: 'No signal', detail: profile.tips };
         }
 
-        if (rms < profile.minRms) {
+        if (_activeMidi === null && rms < profile.minRms) {
             return { status: 'Signal too quiet', detail: 'Increase input gain or play a little stronger.' };
         }
 
-        const pitch = estimatePitchWithYin(buffer, sampleRate, profile)
+        const pitchBuffer = profile.fastFftSize
+            ? getTailBuffer(buffer, profile.fastFftSize)
+            : buffer;
+        const fastMinFrequency = profile.fastMinFrequency ?? profile.minFrequency;
+        const fastProfile = pitchBuffer.length < buffer.length
+            ? { ...profile, minFrequency: fastMinFrequency }
+            : profile;
+        const pitch = estimatePitchWithYin(pitchBuffer, sampleRate, fastProfile)
+            ?? estimatePitchWithYin(buffer, sampleRate, profile)
             ?? estimatePitchWithAutocorrelation(buffer, sampleRate, profile);
         if (!pitch) {
             return { status: 'Pitch unclear', detail: profile.tips };
@@ -549,7 +577,7 @@ window.fretlessAudioInput = (() => {
             _candidateFrames = 0;
             _quietFrames++;
             sendPitchStatus(pitch.status, pitch.detail);
-            if (_quietFrames >= NOTE_OFF_QUIET_FRAMES) {
+            if (_quietFrames >= (_profile?.noteOffQuietFrames ?? NOTE_OFF_QUIET_FRAMES)) {
                 sendNoteOff();
             }
 
@@ -572,7 +600,9 @@ window.fretlessAudioInput = (() => {
             _candidateFrames = 1;
         }
 
-        const stableFrames = _activeMidi === null ? NOTE_ON_STABLE_FRAMES : NOTE_CHANGE_STABLE_FRAMES;
+        const stableFrames = _activeMidi === null
+            ? NOTE_ON_STABLE_FRAMES
+            : (_profile?.noteChangeStableFrames ?? NOTE_CHANGE_STABLE_FRAMES);
         if (_candidateFrames >= stableFrames && _activeMidi !== midi) {
             sendNoteOff();
             sendNoteOn(midi);

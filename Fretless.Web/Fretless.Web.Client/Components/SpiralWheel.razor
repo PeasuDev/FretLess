@@ -116,7 +116,7 @@
                     var isPlayingScaleNote = IsSemitonePlaying(ToChromaticSemitone(slice.SubdivisionIndex));
                     var sliceIsBlocked = isNotInScale && !sliceSelected;
                     var sliceOpacity = isPlayingScaleNote ? 1.0 : sliceSelected ? 1.0 : (isNotInScale ? 0.3 : nonSelectedSliceOpacity);
-                    var sliceFill = isPlayingScaleNote ? "#00e5ff" : isKeySlice || (showSelectedNotesAsWhite && sliceSelected) ? "#ffffff" : slice.Color;
+                    var sliceFill = isPlayingScaleNote ? PlayingIndicatorFill(ToChromaticSemitone(slice.SubdivisionIndex)) : isKeySlice || (showSelectedNotesAsWhite && sliceSelected) ? "#ffffff" : slice.Color;
                     <g class="spiral-segment spiral-note @(sliceSelected ? "spiral-note--selected" : null) @(isPlayingScaleNote ? "spiral-note--playing" : null)"
                        @onclick="() => HandleNoteClickAsync(slice.SubdivisionIndex, null)"
                        style="cursor:@(sliceIsBlocked ? "not-allowed" : "pointer")">
@@ -282,10 +282,7 @@
                     <ConnectedInstrumentSignal InstrumentName="@_connectedInstrumentName"
                                                NoteLabel="@CurrentInputNoteLabel"
                                                NoteDetail="@CurrentInputDetail"
-                                               InputDeviceName="@_connectedInputDeviceName"
                                                SignalStatus="@CurrentSignalStatus"
-                                               PitchStatus="@_pitchDetectionStatus"
-                                               PitchDetail="@_pitchDetectionDetail"
                                                GainStatus="@_gainStatus"
                                                GainStatusDetail="@_gainStatusDetail"
                                                @ref="_connectedInstrumentSignal" />
@@ -469,21 +466,9 @@
                                           PlayingSemitones="@CurrentlyPlayingSemitones"
                                           PlayingFillFor="@PlayingIndicatorFill"
                                           ShowLabels="_showPianoNoteNames"
+                                          UseDarkLabelsForUnhighlightedKeys="@(!string.IsNullOrWhiteSpace(_selectedScale) && GetSelectedScaleNotes() is not null)"
                                           OctaveCount="2"
                                           OnKeyClicked="OnKeyboardKeyClicked" />
-
-                            @if (TryGetSelectedScaleStepPattern(out var stepPattern))
-                            {
-                                <div class="spiral-step-pattern" aria-label="Scale whole and half step pattern">
-                                    <span class="spiral-step-pattern-label">Steps</span>
-                                    <div class="spiral-step-pattern-chips">
-                                        @foreach (var step in stepPattern)
-                                        {
-                                            <StepChip Text="@step" />
-                                        }
-                                    </div>
-                                </div>
-                            }
                         </InstrumentOverlayCard>
                     }
                 }

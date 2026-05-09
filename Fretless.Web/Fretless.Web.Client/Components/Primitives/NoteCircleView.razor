@@ -69,7 +69,8 @@
             if (cofIdx >= 0)
             {
                 var path = OuterArcPath(cofIdx, 12, OuterR, InnerR);
-                <path d="@path" fill="rgba(255,255,255,0.22)" stroke="#ffffff" stroke-width="0.018"
+                var fill = PlayingFillFor?.Invoke(semitone) ?? "#ffffff";
+                <path d="@path" fill="@fill" fill-opacity="0.35" stroke="@fill" stroke-width="0.018"
                       style="pointer-events:none" />
             }
         }
@@ -80,6 +81,7 @@
     [Parameter] public string? SelectedNote { get; set; }
     [Parameter] public IReadOnlyDictionary<int, MusicTheoryService.NoteRole>? KeyRoles { get; set; }
     [Parameter] public IReadOnlyCollection<int>? MidiActiveSemitones { get; set; }
+    [Parameter] public Func<int, string>? PlayingFillFor { get; set; }
     [Parameter] public bool ShowComplementary { get; set; }
     [Parameter] public EventCallback<string> OnNoteClicked { get; set; }
 
