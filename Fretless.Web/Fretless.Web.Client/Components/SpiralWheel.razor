@@ -347,79 +347,21 @@
                             }
 
                             @{
-                                var tuningStrings = _currentTuning.MidiNotes;
-                                var stringCount = tuningStrings.Length;
-                                var fretboardHeight = 14 + stringCount * 16 + 8;
-                                var fretboardBottom = fretboardHeight - 8;
-                                var fretboardViewBox = $"0 0 330 {fretboardHeight}";
                                 var showScaleBoxes = TryGetSelectedScaleDegrees(out var overlayScaleDegrees);
                             }
                             <div class="spiral-fretboard-frame">
-                                <svg viewBox="@fretboardViewBox" class="spiral-mini-fretboard" role="img" aria-label="Selected notes on guitar fretboard">
-                                    <rect x="0" y="0" width="330" height="@fretboardHeight" rx="8" fill="transparent" />
-
-                                    @if (_showGuitarFretNumbers)
-                                    {
-                                        for (var fret = 1; fret <= OverlayFretCount; fret++)
-                                        {
-                                            var x = 20 + (fret - 0.5) * 24;
-                                            @SvgText(x, 7, 6.2, "pointer-events:none;font-family:'Helvetica Neue',sans-serif;fill:rgba(255,255,255,0.72);font-weight:800", fret.ToString())
-                                        }
-                                    }
-
-                                    @for (var fret = 0; fret <= OverlayFretCount; fret++)
-                                    {
-                                        var x = 20 + fret * 24;
-                                        var isNut = fret == 0;
-                                        <line x1="@x" y1="14" x2="@x" y2="@fretboardBottom" stroke="@(isNut ? "#e8e8c8" : "#c0a060")" stroke-width="@((isNut ? 4.0 : 1.2).I())" />
-                                    }
-
-                                    @for (var stringIndex = 0; stringIndex < stringCount; stringIndex++)
-                                    {
-                                        var y = 22 + (stringCount - 1 - stringIndex) * 16;
-                                        var openMidi = tuningStrings[stringIndex];
-                                        var openSemitone = openMidi % 12;
-                                        <line x1="20" y1="@y" x2="308" y2="@y" stroke="#d4c078" stroke-width="@((1.0 + (stringCount - 1 - stringIndex) * 0.2).I())" />
-
-                                        for (var fret = 0; fret <= OverlayFretCount; fret++)
-                                        {
-                                            var semitone = (openSemitone + fret) % 12;
-
-                                            if (hasSelectedOverlayPositionRange
-                                                && (fret < overlayPositionStartFret || fret > overlayPositionEndFret))
-                                            {
-                                                continue;
-                                            }
-
-                                            var isHighlighted = overlaySemitones.Contains(semitone);
-                                            var isPlayingScaleNote = IsGuitarPositionPlaying(openMidi, fret, semitone);
-                                            if (hideNonScaleFretboardNotes && !isHighlighted && !isPlayingScaleNote)
-                                            {
-                                                continue;
-                                            }
-
-                                            var cx = fret == 0 ? 10 : 20 + (fret - 0.5) * 24;
-                                            var isRoot = !string.IsNullOrWhiteSpace(_selectedKey) && overlayRoot >= 0 && semitone == overlayRoot;
-                                            var dotFill = isPlayingScaleNote ? PlayingIndicatorFill(semitone) : isRoot ? "#ffd700" : isHighlighted ? "#ffffff" : "#555555";
-                                            var dotOpacity = isPlayingScaleNote ? "1" : isRoot ? "0.98" : isHighlighted ? "1" : "0.25";
-                                            var dotStroke = isPlayingScaleNote ? "#ffffff" : "none";
-                                            var dotStrokeWidth = isPlayingScaleNote ? "1.8" : "0";
-                                            var noteFill = isRoot || isHighlighted ? "#111111" : "#ffffff";
-                                            var noteOpacity = isRoot ? "0.95" : isHighlighted ? "1" : "0.62";
-                                            var noteLabel = ChromaticSemitoneLabel(semitone);
-                                            var clickSemitone = semitone;
-                                            <g style="cursor:pointer"
-                                               @onclick="async () => await HandleNoteClickAsync(SemitoneToSubdivisionIndex(clickSemitone), null)">
-                                                <circle cx="@cx" cy="@y" r="@(isPlayingScaleNote ? "8.4" : _showGuitarNoteNames ? "7" : "5.2")"
-                                                        fill="@dotFill" opacity="@dotOpacity" stroke="@dotStroke" stroke-width="@dotStrokeWidth" />
-                                                @if (_showGuitarNoteNames)
-                                                {
-                                                    @SvgText(cx, y, 5.1, $"pointer-events:none;font-family:'Helvetica Neue',sans-serif;fill:{noteFill};font-weight:900;opacity:{noteOpacity}", noteLabel)
-                                                }
-                                            </g>
-                                        }
-                                    }
-                                </svg>
+                                <MiniFretboardView Tuning="_currentTuning"
+                                                   FretCount="OverlayFretCount"
+                                                   HighlightedSemitones="overlaySemitones"
+                                                   RootSemitone="@(string.IsNullOrWhiteSpace(_selectedKey) || overlayRoot < 0 ? null : (int?)overlayRoot)"
+                                                   IsPositionPlaying="IsGuitarPositionPlaying"
+                                                   PlayingFillFor="PlayingIndicatorFill"
+                                                   MinFret="@(hasSelectedOverlayPositionRange ? (int?)overlayPositionStartFret : null)"
+                                                   MaxFret="@(hasSelectedOverlayPositionRange ? (int?)overlayPositionEndFret : null)"
+                                                   HideNonHighlighted="hideNonScaleFretboardNotes"
+                                                   ShowFretNumbers="_showGuitarFretNumbers"
+                                                   ShowNoteNames="_showGuitarNoteNames"
+                                                   OnSemitoneClicked="OnGuitarSemitoneClicked" />
                             </div>
 
                             @if (showScaleBoxes)

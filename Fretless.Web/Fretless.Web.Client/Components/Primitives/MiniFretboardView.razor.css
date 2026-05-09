@@ -1,0 +1,10 @@
+.mini-fretboard-view {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.mini-fretboard-view circle:hover {
+    opacity: 1 !important;
+    filter: brightness(1.3);
+}

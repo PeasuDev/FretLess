@@ -1,0 +1,90 @@
+@namespace Fretless.Web.Client.Library.Demos.Primitives
+@using Fretless.Web.Client.Models
+
+<LibraryFrame Title="MiniFretboardView"
+              Description="Compact stateless fretboard SVG used by SpiralWheel's instrument overlay. Different geometry from FretboardView (24px frets, 16px string spacing, 330-wide viewBox, no tuning ▲/▼ buttons, no position markers, optional all-fret numbering, optional per-dot note labels, optional fret-range filter, hide-non-highlighted mode). Output is a single semitone via OnSemitoneClicked. Pure renderer — no service injection."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Primitives/MiniFretboardView.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Default — Standard EADGBE, no overlay</h3>
+            <div class="variant-card__render">
+                <MiniFretboardView Tuning="@TuningService.Standard" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;MiniFretboardView Tuning="@@TuningService.Standard" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">C major scale highlighted, root C, fret numbers</h3>
+            <div class="variant-card__render">
+                <MiniFretboardView Tuning="@TuningService.Standard"
+                                   HighlightedSemitones="@CMajor"
+                                   RootSemitone="0"
+                                   ShowFretNumbers="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;MiniFretboardView … HighlightedSemitones="[…]" RootSemitone="0" ShowFretNumbers="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Hide non-scale + show note names</h3>
+            <div class="variant-card__render">
+                <MiniFretboardView Tuning="@TuningService.Standard"
+                                   HighlightedSemitones="@CMajor"
+                                   RootSemitone="0"
+                                   HideNonHighlighted="true"
+                                   ShowNoteNames="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;MiniFretboardView … HideNonHighlighted="true" ShowNoteNames="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Position-range filter — frets 5–9 only</h3>
+            <div class="variant-card__render">
+                <MiniFretboardView Tuning="@TuningService.Standard"
+                                   HighlightedSemitones="@CMajor"
+                                   RootSemitone="0"
+                                   MinFret="5"
+                                   MaxFret="9"
+                                   ShowFretNumbers="true"
+                                   ShowNoteNames="true" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;MiniFretboardView … MinFret="5" MaxFret="9" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                <input type="checkbox" checked="@_showFretNumbers" @onchange="e => _showFretNumbers = (bool?)e.Value ?? false" />
+                Fret numbers
+            </label>
+            <label>
+                <input type="checkbox" checked="@_showNoteNames" @onchange="e => _showNoteNames = (bool?)e.Value ?? false" />
+                Note names
+            </label>
+            <label>
+                <input type="checkbox" checked="@_hideNonHighlighted" @onchange="e => _hideNonHighlighted = (bool?)e.Value ?? false" />
+                Hide non-scale
+            </label>
+            <span>Last clicked semitone: <strong>@(_lastClicked?.ToString() ?? "(none)")</strong></span>
+        </div>
+        <div class="playground__render">
+            <MiniFretboardView Tuning="@TuningService.Standard"
+                               HighlightedSemitones="@CMajor"
+                               RootSemitone="0"
+                               ShowFretNumbers="_showFretNumbers"
+                               ShowNoteNames="_showNoteNames"
+                               HideNonHighlighted="_hideNonHighlighted"
+                               OnSemitoneClicked="s => _lastClicked = s" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly int[] CMajor = [0, 2, 4, 5, 7, 9, 11];
+
+    private bool _showFretNumbers = true;
+    private bool _showNoteNames;
+    private bool _hideNonHighlighted;
+    private int? _lastClicked;
+}

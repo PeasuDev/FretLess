@@ -87,6 +87,13 @@ public static class LibraryRegistry
             DemoType: typeof(KeyboardViewDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Primitives/KeyboardView.razor"),
         new(
+            Slug: "mini-fretboard-view",
+            Title: "MiniFretboardView",
+            Description: "Compact fretboard SVG used by SpiralWheel; tighter geometry, optional all-fret numbering, hide-non-highlighted, fret-range filter.",
+            Group: LibraryGroup.Primitives,
+            DemoType: typeof(MiniFretboardViewDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Primitives/MiniFretboardView.razor"),
+        new(
             Slug: "note-circle-view",
             Title: "NoteCircleView",
             Description: "Stateless 12-segment circle-of-fifths SVG wheel; selection, key-role coloring, MIDI highlights, complementary outline driven by params.",

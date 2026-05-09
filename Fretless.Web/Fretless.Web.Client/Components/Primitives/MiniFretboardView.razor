@@ -1,0 +1,91 @@
+@namespace Fretless.Web.Client.Components.Primitives
+@using Fretless.Web.Client.Models
+
+@{
+    var tuningStrings = Tuning.MidiNotes;
+    var stringCount = tuningStrings.Length;
+    var fretboardHeight = 14 + stringCount * 16 + 8;
+    var fretboardBottom = fretboardHeight - 8;
+    var minFret = MinFret ?? 0;
+    var maxFret = MaxFret ?? FretCount;
+}
+
+<svg viewBox="0 0 330 @fretboardHeight" class="mini-fretboard-view" role="img" aria-label="@stringCount-string mini fretboard">
+    <rect x="0" y="0" width="330" height="@fretboardHeight" rx="8" fill="transparent" />
+
+    @if (ShowFretNumbers)
+    {
+        for (var fret = 1; fret <= FretCount; fret++)
+        {
+            var x = 20 + (fret - 0.5) * 24;
+            @SvgText(x, 7, 6.2, "pointer-events:none;font-family:'Helvetica Neue',sans-serif;fill:rgba(255,255,255,0.72);font-weight:800", fret.ToString())
+        }
+    }
+
+    @for (var fret = 0; fret <= FretCount; fret++)
+    {
+        var x = 20 + fret * 24;
+        var isNut = fret == 0;
+        <line x1="@x" y1="14" x2="@x" y2="@fretboardBottom" stroke="@(isNut ? "#e8e8c8" : "#c0a060")" stroke-width="@((isNut ? 4.0 : 1.2).I())" />
+    }
+
+    @for (var stringIndex = 0; stringIndex < stringCount; stringIndex++)
+    {
+        var y = 22 + (stringCount - 1 - stringIndex) * 16;
+        var openMidi = tuningStrings[stringIndex];
+        var openSemitone = openMidi % 12;
+        <line x1="20" y1="@y" x2="308" y2="@y" stroke="#d4c078" stroke-width="@((1.0 + (stringCount - 1 - stringIndex) * 0.2).I())" />
+
+        for (var fret = 0; fret <= FretCount; fret++)
+        {
+            if (fret < minFret || fret > maxFret) continue;
+
+            var semitone = (openSemitone + fret) % 12;
+            var isHighlighted = HighlightedSemitones?.Contains(semitone) ?? false;
+            var isPlayingScaleNote = IsPositionPlaying?.Invoke(openMidi, fret, semitone) ?? false;
+
+            if (HideNonHighlighted && !isHighlighted && !isPlayingScaleNote) continue;
+
+            var cx = fret == 0 ? 10 : 20 + (fret - 0.5) * 24;
+            var isRoot = RootSemitone.HasValue && semitone == RootSemitone.Value;
+            var dotFill = isPlayingScaleNote ? (PlayingFillFor?.Invoke(semitone) ?? "#00e5ff")
+                        : isRoot ? "#ffd700"
+                        : isHighlighted ? "#ffffff"
+                        : "#555555";
+            var dotOpacity = isPlayingScaleNote ? "1" : isRoot ? "0.98" : isHighlighted ? "1" : "0.25";
+            var dotStroke = isPlayingScaleNote ? "#ffffff" : "none";
+            var dotStrokeWidth = isPlayingScaleNote ? "1.8" : "0";
+            var noteFill = isRoot || isHighlighted ? "#111111" : "#ffffff";
+            var noteOpacity = isRoot ? "0.95" : isHighlighted ? "1" : "0.62";
+            var noteLabel = MusicTheoryService.NoteAtIndex(semitone);
+            var clickSemitone = semitone;
+            <g style="cursor:pointer"
+               @onclick="() => OnSemitoneClicked.InvokeAsync(clickSemitone)">
+                <circle cx="@cx" cy="@y" r="@(isPlayingScaleNote ? "8.4" : ShowNoteNames ? "7" : "5.2")"
+                        fill="@dotFill" opacity="@dotOpacity" stroke="@dotStroke" stroke-width="@dotStrokeWidth" />
+                @if (ShowNoteNames)
+                {
+                    @SvgText(cx, y, 5.1, $"pointer-events:none;font-family:'Helvetica Neue',sans-serif;fill:{noteFill};font-weight:900;opacity:{noteOpacity}", noteLabel)
+                }
+            </g>
+        }
+    }
+</svg>
+
+@code {
+    [Parameter, EditorRequired] public TuningPreset Tuning { get; set; } = TuningService.Standard;
+    [Parameter] public int FretCount { get; set; } = 12;
+    [Parameter] public IReadOnlyCollection<int>? HighlightedSemitones { get; set; }
+    [Parameter] public int? RootSemitone { get; set; }
+    [Parameter] public Func<int /* openMidi */, int /* fret */, int /* semitone */, bool>? IsPositionPlaying { get; set; }
+    [Parameter] public Func<int /* semitone */, string>? PlayingFillFor { get; set; }
+    [Parameter] public int? MinFret { get; set; }
+    [Parameter] public int? MaxFret { get; set; }
+    [Parameter] public bool HideNonHighlighted { get; set; }
+    [Parameter] public bool ShowFretNumbers { get; set; }
+    [Parameter] public bool ShowNoteNames { get; set; }
+    [Parameter] public EventCallback<int> OnSemitoneClicked { get; set; }
+
+    private static MarkupString SvgText(double x, double y, double fontSize, string style, string? content) =>
+        new($"<text x=\"{x.I()}\" y=\"{y.I()}\" text-anchor=\"middle\" dominant-baseline=\"central\" font-size=\"{fontSize.I()}\" style=\"{style}\">{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(content ?? string.Empty)}</text>");
+}

@@ -795,6 +795,9 @@ public partial class SpiralWheel
     private Task OnKeyboardKeyClicked(int semitone) =>
         HandleNoteClickAsync(SemitoneToSubdivisionIndex(semitone), null);
 
+    private Task OnGuitarSemitoneClicked(int semitone) =>
+        HandleNoteClickAsync(SemitoneToSubdivisionIndex(semitone), null);
+
     private void OnMidiNoteOff(int midi)
     {
         _activeInputMidiNotes.Remove(midi);
