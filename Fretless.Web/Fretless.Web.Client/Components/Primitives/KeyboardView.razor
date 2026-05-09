@@ -1,0 +1,92 @@
+@namespace Fretless.Web.Client.Components.Primitives
+
+<svg viewBox="0 0 @ViewWidth.I() 108" class="keyboard-view" role="img" aria-label="@Octaves-octave keyboard">
+    <rect x="0" y="0" width="@ViewWidth.I()" height="108" rx="8" fill="transparent" />
+
+    @* White keys *@
+    @{
+        var whiteIndex = 0;
+    }
+    @for (var oct = 0; oct < Octaves; oct++)
+    {
+        @for (var k = 0; k < WhiteSemitones.Length; k++)
+        {
+            var semitone = WhiteSemitones[k];
+            var x = 10 + whiteIndex * WhiteWidth;
+            var isSelected = HighlightedSemitones?.Contains(semitone) ?? false;
+            var isRoot = RootSemitone.HasValue && semitone == RootSemitone.Value;
+            var isPlaying = PlayingSemitones?.Contains(semitone) ?? false;
+            var fill = isPlaying ? (PlayingFillFor?.Invoke(semitone) ?? "#00e5ff") : isRoot ? "#ffd700" : isSelected ? "#ffffff" : "#2a2a2a";
+            var stroke = isPlaying ? "#ffffff" : "none";
+            var strokeWidth = isPlaying ? "2.2" : "0";
+            var labelFill = isSelected || isPlaying ? "#111111" : "#ffffff";
+            var label = MusicTheoryService.NoteAtIndex(semitone);
+            var s = semitone;
+            <rect x="@((x + 0.65).I())" y="12" width="20.7" height="86"
+                  fill="@fill" stroke="@stroke" stroke-width="@strokeWidth"
+                  style="cursor:pointer"
+                  @onclick="() => OnKeyClicked.InvokeAsync(s)" />
+            @if (ShowLabels)
+            {
+                @SvgText(x + 11, 88, 7, $"pointer-events:none;font-family:'Helvetica Neue',sans-serif;fill:{labelFill};font-weight:900", label)
+            }
+            whiteIndex++;
+        }
+    }
+
+    @* Black keys *@
+    @for (var oct = 0; oct < Octaves; oct++)
+    {
+        var octOffset = oct * OctaveWidth;
+        @foreach (var (relX, semitone) in BlackKeyOffsets)
+        {
+            var s = semitone;
+            var isSelected = HighlightedSemitones?.Contains(s) ?? false;
+            var isRoot = RootSemitone.HasValue && s == RootSemitone.Value;
+            var isPlaying = PlayingSemitones?.Contains(s) ?? false;
+            var fill = isPlaying ? (PlayingFillFor?.Invoke(s) ?? "#00e5ff") : isRoot ? "#ffd700" : isSelected ? "#ffffff" : "#111111";
+            var labelFill = isSelected || isPlaying ? "#111111" : "#ffffff";
+            var stroke = isPlaying ? "#ffffff" : isSelected ? "#111111" : "none";
+            var strokeWidth = isPlaying ? "2" : isSelected ? "1.2" : "0";
+            var label = MusicTheoryService.NoteAtIndex(s);
+            var x = relX + octOffset;
+            <rect x="@((x + 0.75).I())" y="12" width="12.5" height="54"
+                  fill="@fill" stroke="@stroke" stroke-width="@strokeWidth"
+                  style="cursor:pointer"
+                  @onclick="() => OnKeyClicked.InvokeAsync(s)" />
+            @if (ShowLabels)
+            {
+                @SvgText(x + 7, 43, 5.5, $"pointer-events:none;font-family:'Helvetica Neue',sans-serif;fill:{labelFill};font-weight:900", label)
+            }
+        }
+    }
+</svg>
+
+@code {
+    [Parameter] public IReadOnlyCollection<int>? HighlightedSemitones { get; set; }
+    [Parameter] public int? RootSemitone { get; set; }
+    [Parameter] public IReadOnlyCollection<int>? PlayingSemitones { get; set; }
+    [Parameter] public Func<int, string>? PlayingFillFor { get; set; }
+    [Parameter] public bool ShowLabels { get; set; }
+    [Parameter] public int OctaveCount { get; set; } = 2;
+    [Parameter] public EventCallback<int> OnKeyClicked { get; set; }
+
+    private static readonly int[] WhiteSemitones = [0, 2, 4, 5, 7, 9, 11];
+    private static readonly (double X, int Semitone)[] BlackKeyOffsets =
+    [
+        (26, 1),  // C#
+        (48, 3),  // D#
+        (92, 6),  // F#
+        (114, 8), // G#
+        (136, 10) // A#
+    ];
+
+    private const double WhiteWidth = 22;
+    private const double OctaveWidth = WhiteWidth * 7; // 154
+
+    private int Octaves => Math.Max(1, OctaveCount);
+    private double ViewWidth => 22 + OctaveWidth * Octaves;
+
+    private static MarkupString SvgText(double x, double y, double fontSize, string style, string? content) =>
+        new($"<text x=\"{x.I()}\" y=\"{y.I()}\" text-anchor=\"middle\" dominant-baseline=\"central\" font-size=\"{fontSize.I()}\" style=\"{style}\">{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(content ?? string.Empty)}</text>");
+}

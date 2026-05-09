@@ -77,6 +77,13 @@ public static class LibraryRegistry
             DemoType: typeof(FretboardViewDemo),
             SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Primitives/FretboardView.razor"),
         new(
+            Slug: "keyboard-view",
+            Title: "KeyboardView",
+            Description: "Stateless mini-piano renderer; selection / root / playing states + ShowLabels + OctaveCount.",
+            Group: LibraryGroup.Primitives,
+            DemoType: typeof(KeyboardViewDemo),
+            SourcePath: "Fretless.Web/Fretless.Web.Client/Components/Primitives/KeyboardView.razor"),
+        new(
             Slug: "note-circle-view",
             Title: "NoteCircleView",
             Description: "Stateless 12-segment circle-of-fifths SVG wheel; selection, key-role coloring, MIDI highlights, complementary outline driven by params.",

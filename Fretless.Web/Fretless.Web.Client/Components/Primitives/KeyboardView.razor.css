@@ -1,0 +1,9 @@
+.keyboard-view {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.keyboard-view rect[style*="cursor:pointer"]:hover {
+    filter: brightness(0.85);
+}

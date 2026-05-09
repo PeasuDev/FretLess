@@ -831,12 +831,6 @@
     background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.16));
 }
 
-.spiral-mini-keys {
-    width: 100%;
-    display: block;
-    height: auto;
-}
-
 .spiral-overlay-position-row {
     margin-top: 0.4rem;
     display: flex;
@@ -857,10 +851,6 @@
 .spiral-mini-fretboard circle:hover {
     opacity: 1 !important;
     filter: brightness(1.3);
-}
-
-.spiral-mini-keys rect:hover {
-    filter: brightness(0.85);
 }
 
 .spiral-overlay-position-btn {

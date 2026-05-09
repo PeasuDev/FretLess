@@ -464,52 +464,13 @@
                                 <InstrumentDisplaySettingsPanel ShowNoteNames="@_showPianoNoteNames"
                                                                 ShowNoteNamesChanged="OnShowPianoNoteNamesChanged" />
                             }
-                            <svg viewBox="0 0 330 108" class="spiral-mini-keys" role="img" aria-label="Selected notes on piano keyboard">
-                                <rect x="0" y="0" width="330" height="108" rx="8" fill="transparent" />
-
-                                @for (var i = 0; i < PianoWhiteSemitones.Length; i++)
-                                {
-                                    var whiteSemitone = PianoWhiteSemitones[i];
-                                    var x = 10 + i * 22;
-                                    var isSelected = overlaySemitones.Contains(whiteSemitone);
-                                    var isRoot = !string.IsNullOrWhiteSpace(_selectedKey) && overlayRoot >= 0 && whiteSemitone == overlayRoot;
-                                    var isPlayingScaleNote = IsSemitonePlaying(whiteSemitone);
-                                    var fill = isPlayingScaleNote ? PlayingIndicatorFill(whiteSemitone) : isRoot ? "#ffd700" : isSelected ? "#ffffff" : "#2a2a2a";
-                                    var stroke = isPlayingScaleNote ? "#ffffff" : "none";
-                                    var strokeWidth = isPlayingScaleNote ? "2.2" : "0";
-                                    var label = ChromaticSemitoneLabel(whiteSemitone);
-                                    var labelFill = isSelected || isPlayingScaleNote ? "#111111" : "#ffffff";
-                                    var ws = whiteSemitone;
-                                    <rect x="@((x + 0.65).I())" y="12" width="20.7" height="86" fill="@fill" stroke="@stroke" stroke-width="@strokeWidth"
-                                          style="cursor:pointer"
-                                          @onclick="async () => await HandleNoteClickAsync(SemitoneToSubdivisionIndex(ws), null)" />
-                                    @if (_showPianoNoteNames)
-                                    {
-                                        @SvgText(x + 11, 88, 7, $"pointer-events:none;font-family:'Helvetica Neue',sans-serif;fill:{labelFill};font-weight:900", label)
-                                    }
-                                }
-
-                                @for (var i = 0; i < PianoBlackKeys.Length; i++)
-                                {
-                                    var blackKey = PianoBlackKeys[i];
-                                    var isSelected = overlaySemitones.Contains(blackKey.Semitone);
-                                    var isRoot = !string.IsNullOrWhiteSpace(_selectedKey) && overlayRoot >= 0 && blackKey.Semitone == overlayRoot;
-                                    var isPlayingScaleNote = IsSemitonePlaying(blackKey.Semitone);
-                                    var fill = isPlayingScaleNote ? PlayingIndicatorFill(blackKey.Semitone) : isRoot ? "#ffd700" : isSelected ? "#ffffff" : "#111111";
-                                    var label = ChromaticSemitoneLabel(blackKey.Semitone);
-                                    var labelFill = isSelected || isPlayingScaleNote ? "#111111" : "#ffffff";
-                                    var stroke = isPlayingScaleNote ? "#ffffff" : isSelected ? "#111111" : "none";
-                                    var strokeWidth = isPlayingScaleNote ? "2" : isSelected ? "1.2" : "0";
-                                    var bs = blackKey.Semitone;
-                                    <rect x="@((blackKey.X + 0.75).I())" y="12" width="12.5" height="54" fill="@fill" stroke="@stroke" stroke-width="@strokeWidth"
-                                          style="cursor:pointer"
-                                          @onclick="async () => await HandleNoteClickAsync(SemitoneToSubdivisionIndex(bs), null)" />
-                                    @if (_showPianoNoteNames)
-                                    {
-                                        @SvgText(blackKey.X + 7, 43, 5.5, $"pointer-events:none;font-family:'Helvetica Neue',sans-serif;fill:{labelFill};font-weight:900", label)
-                                    }
-                                }
-                            </svg>
+                            <KeyboardView HighlightedSemitones="overlaySemitones"
+                                          RootSemitone="@(string.IsNullOrWhiteSpace(_selectedKey) || overlayRoot < 0 ? null : (int?)overlayRoot)"
+                                          PlayingSemitones="@CurrentlyPlayingSemitones"
+                                          PlayingFillFor="@PlayingIndicatorFill"
+                                          ShowLabels="_showPianoNoteNames"
+                                          OctaveCount="2"
+                                          OnKeyClicked="OnKeyboardKeyClicked" />
 
                             @if (TryGetSelectedScaleStepPattern(out var stepPattern))
                             {

@@ -775,6 +775,26 @@ public partial class SpiralWheel
         ? $"rgba(0,229,255,{alpha.I()})"
         : IsSemitoneInSelectedScale(semitone) ? $"rgba(54,214,107,{alpha.I()})" : $"rgba(255,77,77,{alpha.I()})";
 
+    /// <summary>
+    /// Set form of <see cref="IsSemitonePlaying"/> — used by stateless primitives
+    /// (e.g. KeyboardView) that take a collection rather than calling a predicate per cell.
+    /// </summary>
+    private IReadOnlyCollection<int> CurrentlyPlayingSemitones
+    {
+        get
+        {
+            if (_activeScalePlaybackSemitone is null)
+            {
+                return _midiActiveSemitones;
+            }
+            var set = new HashSet<int>(_midiActiveSemitones) { _activeScalePlaybackSemitone.Value };
+            return set;
+        }
+    }
+
+    private Task OnKeyboardKeyClicked(int semitone) =>
+        HandleNoteClickAsync(SemitoneToSubdivisionIndex(semitone), null);
+
     private void OnMidiNoteOff(int midi)
     {
         _activeInputMidiNotes.Remove(midi);

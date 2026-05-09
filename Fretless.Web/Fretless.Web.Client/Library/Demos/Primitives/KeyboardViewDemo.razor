@@ -1,0 +1,87 @@
+@namespace Fretless.Web.Client.Library.Demos.Primitives
+
+<LibraryFrame Title="KeyboardView"
+              Description="Stateless mini-piano renderer. White keys + black keys with selection (white fill), root (gold), playing (cyan glow). OctaveCount controls how many octaves are shown horizontally; each octave is 7 white keys × 22px wide. Pure renderer — no service injection. Used by SpiralWheel's instrument overlay."
+              SourcePath="Fretless.Web/Fretless.Web.Client/Components/Primitives/KeyboardView.razor">
+
+    <Variants>
+        <div class="variant-card">
+            <h3 class="variant-card__label">Default — 2 octaves, no overlay</h3>
+            <div class="variant-card__render">
+                <KeyboardView OctaveCount="2" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;KeyboardView OctaveCount="2" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">C major scale highlighted, root C</h3>
+            <div class="variant-card__render">
+                <KeyboardView HighlightedSemitones="@CMajorSemitones"
+                              RootSemitone="0"
+                              OctaveCount="2" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;KeyboardView HighlightedSemitones="[0,2,4,5,7,9,11]" RootSemitone="0" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">Playing — C E G with cyan glow + labels</h3>
+            <div class="variant-card__render">
+                <KeyboardView PlayingSemitones="@(new[] { 0, 4, 7 })"
+                              ShowLabels="true"
+                              OctaveCount="2" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;KeyboardView PlayingSemitones="[0,4,7]" ShowLabels="true" /&gt;</code></pre>
+        </div>
+
+        <div class="variant-card">
+            <h3 class="variant-card__label">1-octave compact</h3>
+            <div class="variant-card__render">
+                <KeyboardView HighlightedSemitones="@(new[] { 0, 4, 7 })"
+                              RootSemitone="0"
+                              ShowLabels="true"
+                              OctaveCount="1" />
+            </div>
+            <pre class="variant-card__code"><code>&lt;KeyboardView … OctaveCount="1" ShowLabels="true" /&gt;</code></pre>
+        </div>
+    </Variants>
+
+    <Controls>
+        <div class="playground__strip">
+            <label>
+                Octaves:
+                <select @bind="_octaves">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                </select>
+            </label>
+            <label>
+                <input type="checkbox" checked="@_showLabels" @onchange="e => _showLabels = (bool?)e.Value ?? false" />
+                Labels
+            </label>
+            <span>Last clicked semitone: <strong>@(_lastClicked?.ToString() ?? "(none)")</strong></span>
+            <button type="button" @onclick="() => { _highlights.Clear(); _lastClicked = null; }">Clear</button>
+        </div>
+        <div class="playground__render">
+            <KeyboardView HighlightedSemitones="_highlights"
+                          OctaveCount="_octaves"
+                          ShowLabels="_showLabels"
+                          OnKeyClicked="OnPlaygroundClicked" />
+        </div>
+    </Controls>
+</LibraryFrame>
+
+@code {
+    private static readonly int[] CMajorSemitones = [0, 2, 4, 5, 7, 9, 11];
+
+    private int _octaves = 2;
+    private bool _showLabels;
+    private HashSet<int> _highlights = [];
+    private int? _lastClicked;
+
+    private void OnPlaygroundClicked(int semitone)
+    {
+        _lastClicked = semitone;
+        if (!_highlights.Add(semitone)) _highlights.Remove(semitone);
+    }
+}
