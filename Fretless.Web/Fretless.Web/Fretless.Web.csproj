@@ -14,7 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Fretless.Web.Client\Fretless.Web.Client.csproj" />
     <ProjectReference Include="..\..\Fretless.ServiceDefaults\Fretless.ServiceDefaults.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.13" />
   </ItemGroup>
 
 </Project>
